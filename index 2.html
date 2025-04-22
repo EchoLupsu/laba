@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>拉霸機 Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: #888;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 32px;
+      color: #fff;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px #000;
+    }
+    .slot-machine {
+      display: flex;
+      background: #e66b5b;
+      padding: 30px;
+      border-radius: 50px;
+      box-shadow: 0 8px 0 #222;
+      border: 4px solid #fff;
+    }
+    .reel {
+      width: 100px;
+      height: 240px;
+      margin: 0 15px;
+      overflow: hidden;
+      background: #fdf7ec;
+      border-radius: 16px;
+      box-shadow: inset 0 0 10px #999;
+      position: relative;
+    }
+    .symbol {
+      width: 100%;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: #0c2d42;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+    }
+    .highlight {
+      background-color: #ffd700 !important;
+      color: #000;
+      font-weight: bold;
+    }
+    .lever {
+      position: absolute;
+      right: -100px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 160px;
+      background: #e66b5b;
+      border-radius: 20px;
+      box-shadow: 0 0 10px #fff;
+    }
+    .knob {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 60px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 20px #fff;
+      cursor: pointer;
+      transition: transform 0.4s ease;
+    }
+    .knob.pulled {
+      transform: translateX(-50%) translateY(120px);
+    }
+    .button-container {
+      display: none;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1 style="text-shadow: 1px 1px #000; font-family: 'Noto Sans TC', sans-serif; letter-spacing: 8px;">麻豆傳媒超級拉霸</h1>
+  <div class="slot-machine" style="position: relative;">
+    <div class="reel" id="reel1"></div>
+    <div class="reel" id="reel2"></div>
+    <div class="reel" id="reel3"></div>
+    <div class="lever">
+      <div class="knob" id="knob"></div>
+    </div>
+  </div>
+
+  <script>
+    const symbolImages = {
+      star: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+      diamond: "https://cdn-icons-png.flaticon.com/512/833/833472.png",
+      logo: "https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/M-logo_black.png"
+    };
+
+    const reelCount = 3;
+    const visibleSymbols = 3;
+
+    async function fetchSpinResult() {
+      const res = await fetch("https://slot-backend-m7uc.onrender.com/spin");
+      return await res.json();
+    }
+
+    function createReelSymbols(length, result) {
+      const pool = ['star', 'diamond', 'logo'];
+      const arr = [];
+      for (let i = 0; i < length; i++) {
+        arr.push(pool[Math.floor(Math.random() * pool.length)]);
+      }
+      return arr.concat(result);
+    }
+
+    function spinReelWithAnimation(reel, result, delay = 0) {
+      const totalSymbols = 20;
+      const spinSymbols = createReelSymbols(totalSymbols, result);
+
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "absolute";
+      wrapper.style.top = "0";
+      wrapper.style.width = "100%";
+
+      spinSymbols.forEach(sym => {
+        const div = document.createElement("div");
+        div.className = "symbol";
+        div.innerHTML = `<img src="${symbolImages[sym]}" alt="${sym}" style="height: 60px;">`;
+        wrapper.appendChild(div);
+      });
+
+      reel.innerHTML = "";
+      reel.appendChild(wrapper);
+
+      const targetTop = -(spinSymbols.length - visibleSymbols) * 80;
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            wrapper.style.transition = "top 1.5s cubic-bezier(0.33, 1, 0.68, 1)";
+            wrapper.style.top = `${targetTop}px`;
+          });
+        });
+      }, delay);
+
+      return new Promise(resolve => {
+        setTimeout(() => resolve(wrapper), delay + 1600);
+      });
+    }
+
+    document.getElementById("knob").addEventListener("click", async (e) => {
+      const knob = e.currentTarget;
+      knob.classList.add("pulled");
+
+      const { reels, isWin, prize } = await fetchSpinResult();
+
+      const wrappers = await Promise.all([
+        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
+        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
+        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
+      ]);
+
+      setTimeout(() => knob.classList.remove("pulled"), 400);
+
+      if (isWin) {
+        alert("🎉 中獎啦！\n獎品：" + prize);
+      }
+    });
+  </script>
+  <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png" alt="品牌 Logo" style="width: 400px; margin-top: 30px;">
+</body>
+</html>
