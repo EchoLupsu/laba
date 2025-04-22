@@ -147,7 +147,7 @@
       spinSymbols.forEach(sym => {
         const div = document.createElement("div");
         div.className = "symbol";
-        div.innerHTML = `<img src="${symbolImages[sym]}" alt="${sym}" style="height: 60px;">`;
+        div.innerHTML = `<img src="${symbolImages[sym] || 'https://via.placeholder.com/60?text=?'}" alt="${sym}" style="height: 60px;">`;
         wrapper.appendChild(div);
       });
 
