@@ -93,6 +93,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
+      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊時的會員帳號</p>
+      <input type="email" id="userEmail" placeholder="輸入信箱" style="margin-top: 10px; padding: 8px; width: 90%; font-size: 16px;" required>
+      <br><br>
+      <button onclick="submitEmail()" style="padding: 10px 20px; font-size: 16px;">確認</button>
+    </div>
+  </div>
   <h1 style="text-shadow: 1px 1px #000; font-family: 'Noto Sans TC', sans-serif; letter-spacing: 8px;">麻豆傳媒超級拉霸</h1>
   <div class="slot-machine" style="position: relative;">
     <div class="reel" id="reel1"></div>
@@ -165,7 +173,15 @@
       const knob = e.currentTarget;
       knob.classList.add("pulled");
 
-      const { reels, isWin, prize } = await fetchSpinResult();
+      const email = localStorage.getItem('mdav_email') || '';
+      const res = await fetch("https://slot-backend-m7uc.onrender.com/spin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+      });
+      const { reels, isWin, prize } = await res.json();
 
       const wrappers = await Promise.all([
         spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
@@ -179,7 +195,26 @@
         alert("🎉 中獎啦！\n獎品：" + prize);
       }
     });
-  </script>
+  
+    function submitEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email || !email.includes('@')) {
+        alert('請輸入正確的信箱格式');
+        return;
+      }
+      localStorage.setItem('mdav_email', email);
+      document.getElementById('emailPrompt').style.display = 'none';
+    }
+
+    window.onload = () => {
+      const stored = localStorage.getItem('mdav_email');
+      if (!stored) {
+        document.getElementById('emailPrompt').style.display = 'flex';
+      } else {
+        document.getElementById('emailPrompt').style.display = 'none';
+      }
+    };
+</script>
   <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png" alt="品牌 Logo" style="width: 400px; margin-top: 30px;">
 </body>
 </html>
