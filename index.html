@@ -76,8 +76,7 @@
   </style>
 </head>
 <body>
-
-  <!-- 活動說明 -->
+  <!-- 活動說明彈窗 -->
   <div id="introModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; text-align: center; color: black;">
       <h2>🎰 活動說明</h2>
@@ -89,7 +88,7 @@
     </div>
   </div>
 
-  <!-- Email 輸入彈窗 -->
+  <!-- Email 輸入 -->
   <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
       <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊時的會員帳號</p>
@@ -109,7 +108,7 @@
     </div>
   </div>
 
-  <!-- 中獎彈窗 -->
+  <!-- 中獎提示彈窗 -->
   <div id="prizeModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
       <h2>🎉 恭喜中獎！</h2>
@@ -118,154 +117,144 @@
     </div>
   </div>
 
-  <!-- 使用者紀錄 -->
+  <!-- 中獎紀錄 -->
   <div id="user-history" style="margin-top: 30px; font-size: 16px; color: white;"></div>
 
   <!-- LOGO -->
   <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png"
        alt="品牌 Logo"
        style="width: 400px; margin-top: 30px; display: block; margin-left: auto; margin-right: auto;">
+<script>
+  const API_BASE = 'https://slot-backend-m7uc.onrender.com';
+  let limitDailyOnce = true;
 
-  <script>
-    let limitDailyOnce = true;
+  async function loadConfigSettings() {
+    try {
+      const res = await fetch(`${API_BASE}/config`);
+      const config = await res.json();
+      limitDailyOnce = !!config.limitDailyOnce;
+    } catch (err) {
+      console.error('無法載入 config 設定', err);
+    }
+  }
 
-    async function loadConfigSettings() {
-      try {
-        const res = await fetch('/config');
-        const config = await res.json();
-        limitDailyOnce = !!config.limitDailyOnce;
-      } catch (err) {
-        console.error('無法載入 config 設定', err);
+  async function loadUserRecord() {
+    const email = localStorage.getItem('mdav_email');
+    if (!email) return;
+    try {
+      const res = await fetch(`${API_BASE}/log/self?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (!limitDailyOnce) return;
+      if (data.length > 0) {
+        const latest = data[0];
+        document.getElementById('user-history').innerHTML =
+          `🎯 你今天已抽過！<br>🕒 時間：${latest.time}<br>🎁 結果：<strong>${latest.prize || '未中獎'}</strong>`;
+        document.getElementById('knob').style.pointerEvents = 'none';
+        document.getElementById('knob').style.opacity = '0.5';
       }
+    } catch (err) {
+      console.error('查詢紀錄失敗', err);
     }
+  }
 
-    async function loadUserRecord() {
-      const email = localStorage.getItem('mdav_email');
-      if (!email) return;
+  function showPrizePopup(prize) {
+    document.getElementById('prizeMessage').textContent = prize;
+    document.getElementById('prizeModal').style.display = 'flex';
+  }
 
-      try {
-        const res = await fetch(`/log/self?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-
-        if (!limitDailyOnce) return;
-
-        if (data.length > 0) {
-          const latest = data[0];
-          document.getElementById('user-history').innerHTML =
-            `🎯 你今天已抽過！<br>🕒 時間：${latest.time}<br>🎁 結果：<strong>${latest.prize || '未中獎'}</strong>`;
-          document.getElementById('knob').style.pointerEvents = 'none';
-          document.getElementById('knob').style.opacity = '0.5';
-        }
-      } catch (err) {
-        console.error('查詢紀錄失敗', err);
-      }
+  function createReelSymbols(length, result) {
+    const pool = ['star', 'diamond', 'logo'];
+    const arr = [];
+    for (let i = 0; i < length; i++) {
+      arr.push(pool[Math.floor(Math.random() * pool.length)]);
     }
+    return arr.concat(result);
+  }
 
-    function showPrizePopup(prize) {
-      document.getElementById('prizeMessage').textContent = prize;
-      document.getElementById('prizeModal').style.display = 'flex';
-    }
-
-    function createReelSymbols(length, result) {
-      const pool = ['star', 'diamond', 'logo'];
-      const arr = [];
-      for (let i = 0; i < length; i++) {
-        arr.push(pool[Math.floor(Math.random() * pool.length)]);
-      }
-      return arr.concat(result);
-    }
-
-    function spinReelWithAnimation(reel, result, delay = 0) {
-      const totalSymbols = 20;
-      const spinSymbols = createReelSymbols(totalSymbols, result);
-
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "absolute";
-      wrapper.style.top = "0";
-      wrapper.style.width = "100%";
-
-      spinSymbols.forEach(sym => {
-        const div = document.createElement("div");
-        div.className = "symbol";
-        div.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" alt="${sym}" style="height: 60px;">`;
-        wrapper.appendChild(div);
-      });
-
-      reel.innerHTML = "";
-      reel.appendChild(wrapper);
-
-      const targetTop = -(spinSymbols.length - 3) * 80;
-      setTimeout(() => {
+  function spinReelWithAnimation(reel, result, delay = 0) {
+    const totalSymbols = 20;
+    const spinSymbols = createReelSymbols(totalSymbols, result);
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "absolute";
+    wrapper.style.top = "0";
+    wrapper.style.width = "100%";
+    spinSymbols.forEach(sym => {
+      const div = document.createElement("div");
+      div.className = "symbol";
+      div.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" alt="${sym}" style="height: 60px;">`;
+      wrapper.appendChild(div);
+    });
+    reel.innerHTML = "";
+    reel.appendChild(wrapper);
+    const targetTop = -(spinSymbols.length - 3) * 80;
+    setTimeout(() => {
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            wrapper.style.transition = "top 1.5s cubic-bezier(0.33, 1, 0.68, 1)";
-            wrapper.style.top = `${targetTop}px`;
-          });
+          wrapper.style.transition = "top 1.5s cubic-bezier(0.33, 1, 0.68, 1)";
+          wrapper.style.top = `${targetTop}px`;
         });
-      }, delay);
-
-      return new Promise(resolve => {
-        setTimeout(() => resolve(wrapper), delay + 1600);
       });
-    }
+    }, delay);
+    return new Promise(resolve => setTimeout(() => resolve(wrapper), delay + 1600));
+  }
 
-    document.getElementById("knob").addEventListener("click", async () => {
-      const knob = document.getElementById("knob");
-      knob.classList.add("pulled");
-
-      const email = localStorage.getItem('mdav_email') || '';
-      const res = await fetch("/spin", {
+  document.getElementById("knob").addEventListener("click", async () => {
+    const knob = document.getElementById("knob");
+    knob.classList.add("pulled");
+    const email = localStorage.getItem('mdav_email') || '';
+    try {
+      const res = await fetch(`${API_BASE}/spin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
+      if (!res.ok) throw new Error('後端回傳錯誤');
       const { reels, isWin, prize } = await res.json();
-
       await Promise.all([
         spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
         spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
         spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
       ]);
-
       setTimeout(() => knob.classList.remove("pulled"), 400);
-
       if (isWin && prize) {
         showPrizePopup(prize);
-        document.getElementById('user-history').innerHTML =
-          `🎯 抽中：<strong>${prize}</strong>`;
+        document.getElementById('user-history').innerHTML = `🎯 抽中：<strong>${prize}</strong>`;
       }
-    });
+    } catch (err) {
+      console.error('❌ 抽獎錯誤：', err);
+      alert('抽獎時發生錯誤，請稍後再試！');
+    }
+  });
 
-    function submitEmail() {
-      const email = document.getElementById('userEmail').value.trim();
-      if (!email || !email.includes('@')) {
-        alert('請輸入正確的信箱格式');
-        return;
-      }
-      localStorage.setItem('mdav_email', email);
-      document.getElementById('emailPrompt').style.display = 'none';
+  function submitEmail() {
+    const email = document.getElementById('userEmail').value.trim();
+    if (!email || !email.includes('@')) {
+      alert('請輸入正確的信箱格式');
+      return;
+    }
+    localStorage.setItem('mdav_email', email);
+    document.getElementById('emailPrompt').style.display = 'none';
+    loadUserRecord();
+  }
+
+  function confirmIntro() {
+    localStorage.setItem('seenIntro', 'yes');
+    document.getElementById('introModal').style.display = 'none';
+    document.getElementById('emailPrompt').style.display = 'flex';
+  }
+
+  window.onload = async () => {
+    await loadConfigSettings();
+    const seenIntro = localStorage.getItem('seenIntro');
+    const email = localStorage.getItem('mdav_email');
+    if (!seenIntro) {
+      document.getElementById('introModal').style.display = 'flex';
+    } else if (!email) {
+      document.getElementById('emailPrompt').style.display = 'flex';
+    } else {
       loadUserRecord();
     }
-
-    function confirmIntro() {
-      localStorage.setItem('seenIntro', 'yes');
-      document.getElementById('introModal').style.display = 'none';
-      document.getElementById('emailPrompt').style.display = 'flex';
-    }
-
-    window.onload = async () => {
-      await loadConfigSettings();
-      const seenIntro = localStorage.getItem('seenIntro');
-      const email = localStorage.getItem('mdav_email');
-
-      if (!seenIntro) {
-        document.getElementById('introModal').style.display = 'flex';
-      } else if (!email) {
-        document.getElementById('emailPrompt').style.display = 'flex';
-      } else {
-        loadUserRecord();
-      }
-    };
-  </script>
+  };
+</script>
 </body>
 </html>
