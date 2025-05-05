@@ -77,10 +77,22 @@
 </head>
 <body>
 
-  <!-- 信箱輸入提示 -->
-  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+  <!-- 活動說明 -->
+  <div id="introModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; text-align: center; color: black;">
+      <h2>🎰 活動說明</h2>
+      <p>歡迎參加<strong>麻豆傳媒超級拉霸機</strong>活動！</p>
+      <p>輸入您在<strong>麻豆國際版</strong>註冊的會員信箱，即可免費抽獎一次，有機會獲得 VIP、折扣碼等驚喜好禮！</p>
+      <p>每人每日限抽一次，快來試試手氣吧！</p>
+      <br>
+      <button onclick="confirmIntro()" style="padding: 10px 20px; font-size: 16px;">我已了解</button>
+    </div>
+  </div>
+
+  <!-- Email 輸入彈窗 -->
+  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
-      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊的會員信箱</p>
+      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊時的會員帳號</p>
       <input type="email" id="userEmail" placeholder="輸入信箱" style="margin-top: 10px; padding: 8px; width: 90%; font-size: 16px;" required>
       <br><br>
       <button onclick="submitEmail()" style="padding: 10px 20px; font-size: 16px;">確認</button>
@@ -97,7 +109,7 @@
     </div>
   </div>
 
-  <!-- 中獎提示彈窗 -->
+  <!-- 中獎彈窗 -->
   <div id="prizeModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
       <h2>🎉 恭喜中獎！</h2>
@@ -106,7 +118,7 @@
     </div>
   </div>
 
-  <!-- 使用者中獎紀錄 -->
+  <!-- 使用者紀錄 -->
   <div id="user-history" style="margin-top: 30px; font-size: 16px; color: white;"></div>
 
   <!-- LOGO -->
@@ -115,21 +127,16 @@
        style="width: 400px; margin-top: 30px; display: block; margin-left: auto; margin-right: auto;">
 
   <script>
-    const symbolImages = {
-      star: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
-      diamond: "https://cdn-icons-png.flaticon.com/512/833/833472.png",
-      logo: "https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/M-logo_black.png"
-    };
+    let limitDailyOnce = true;
 
-    async function submitEmail() {
-      const email = document.getElementById('userEmail').value.trim();
-      if (!email || !email.includes('@')) {
-        alert('請輸入正確的信箱格式');
-        return;
+    async function loadConfigSettings() {
+      try {
+        const res = await fetch('/config');
+        const config = await res.json();
+        limitDailyOnce = !!config.limitDailyOnce;
+      } catch (err) {
+        console.error('無法載入 config 設定', err);
       }
-      localStorage.setItem('mdav_email', email);
-      document.getElementById('emailPrompt').style.display = 'none';
-      await loadUserRecord();
     }
 
     async function loadUserRecord() {
@@ -140,6 +147,8 @@
         const res = await fetch(`/log/self?email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
+        if (!limitDailyOnce) return;
+
         if (data.length > 0) {
           const latest = data[0];
           document.getElementById('user-history').innerHTML =
@@ -148,7 +157,7 @@
           document.getElementById('knob').style.opacity = '0.5';
         }
       } catch (err) {
-        console.error('載入用戶紀錄失敗', err);
+        console.error('查詢紀錄失敗', err);
       }
     }
 
@@ -178,7 +187,7 @@
       spinSymbols.forEach(sym => {
         const div = document.createElement("div");
         div.className = "symbol";
-        div.innerHTML = `<img src="${symbolImages[sym] || 'https://via.placeholder.com/60?text=?'}" alt="${sym}" style="height: 60px;">`;
+        div.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" alt="${sym}" style="height: 60px;">`;
         wrapper.appendChild(div);
       });
 
@@ -200,21 +209,19 @@
       });
     }
 
-    document.getElementById("knob").addEventListener("click", async (e) => {
-      const knob = e.currentTarget;
+    document.getElementById("knob").addEventListener("click", async () => {
+      const knob = document.getElementById("knob");
       knob.classList.add("pulled");
 
       const email = localStorage.getItem('mdav_email') || '';
       const res = await fetch("/spin", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
       const { reels, isWin, prize } = await res.json();
 
-      const wrappers = await Promise.all([
+      await Promise.all([
         spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
         spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
         spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
@@ -229,12 +236,33 @@
       }
     });
 
-    window.onload = () => {
+    function submitEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email || !email.includes('@')) {
+        alert('請輸入正確的信箱格式');
+        return;
+      }
+      localStorage.setItem('mdav_email', email);
+      document.getElementById('emailPrompt').style.display = 'none';
+      loadUserRecord();
+    }
+
+    function confirmIntro() {
+      localStorage.setItem('seenIntro', 'yes');
+      document.getElementById('introModal').style.display = 'none';
+      document.getElementById('emailPrompt').style.display = 'flex';
+    }
+
+    window.onload = async () => {
+      await loadConfigSettings();
+      const seenIntro = localStorage.getItem('seenIntro');
       const email = localStorage.getItem('mdav_email');
-      if (!email) {
+
+      if (!seenIntro) {
+        document.getElementById('introModal').style.display = 'flex';
+      } else if (!email) {
         document.getElementById('emailPrompt').style.display = 'flex';
       } else {
-        document.getElementById('emailPrompt').style.display = 'none';
         loadUserRecord();
       }
     };
