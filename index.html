@@ -211,9 +211,9 @@
       if (!res.ok) throw new Error('後端回傳錯誤');
       const { reels, isWin, prize } = await res.json();
       await Promise.all([
-        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
+        spinReelWithAnimation(document.getElementById("reel1"), reels[0][1], 0),
+        spinReelWithAnimation(document.getElementById("reel2"), reels[1][1], 300),
+        spinReelWithAnimation(document.getElementById("reel3"), reels[2][1], 600),
       ]);
       setTimeout(() => knob.classList.remove("pulled"), 400);
       if (isWin && prize) {
