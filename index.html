@@ -14,14 +14,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
-    }
-    h1 {
-      font-size: 32px;
-      color: #fff;
-      margin-bottom: 20px;
-      text-shadow: 2px 2px #000;
     }
     .slot-machine {
       display: flex;
@@ -83,6 +77,16 @@
 </head>
 <body>
 
+  <!-- 信箱輸入提示 -->
+  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
+      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊的會員信箱</p>
+      <input type="email" id="userEmail" placeholder="輸入信箱" style="margin-top: 10px; padding: 8px; width: 90%; font-size: 16px;" required>
+      <br><br>
+      <button onclick="submitEmail()" style="padding: 10px 20px; font-size: 16px;">確認</button>
+    </div>
+  </div>
+
   <h1>麻豆傳媒超級拉霸</h1>
   <div class="slot-machine" style="position: relative;">
     <div class="reel" id="reel1"></div>
@@ -93,7 +97,7 @@
     </div>
   </div>
 
-  <!-- ✅ 中獎提示彈窗 -->
+  <!-- 中獎提示彈窗 -->
   <div id="prizeModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
       <h2>🎉 恭喜中獎！</h2>
@@ -102,7 +106,10 @@
     </div>
   </div>
 
-  <!-- ✅ LOGO -->
+  <!-- 使用者中獎紀錄 -->
+  <div id="user-history" style="margin-top: 30px; font-size: 16px; color: white;"></div>
+
+  <!-- LOGO -->
   <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png"
        alt="品牌 Logo"
        style="width: 400px; margin-top: 30px; display: block; margin-left: auto; margin-right: auto;">
@@ -114,8 +121,36 @@
       logo: "https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/M-logo_black.png"
     };
 
-    const reelCount = 3;
-    const visibleSymbols = 3;
+    async function submitEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email || !email.includes('@')) {
+        alert('請輸入正確的信箱格式');
+        return;
+      }
+      localStorage.setItem('mdav_email', email);
+      document.getElementById('emailPrompt').style.display = 'none';
+      await loadUserRecord();
+    }
+
+    async function loadUserRecord() {
+      const email = localStorage.getItem('mdav_email');
+      if (!email) return;
+
+      try {
+        const res = await fetch(`/log/self?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (data.length > 0) {
+          const latest = data[0];
+          document.getElementById('user-history').innerHTML =
+            `🎯 你今天已抽過！<br>🕒 時間：${latest.time}<br>🎁 結果：<strong>${latest.prize || '未中獎'}</strong>`;
+          document.getElementById('knob').style.pointerEvents = 'none';
+          document.getElementById('knob').style.opacity = '0.5';
+        }
+      } catch (err) {
+        console.error('載入用戶紀錄失敗', err);
+      }
+    }
 
     function showPrizePopup(prize) {
       document.getElementById('prizeMessage').textContent = prize;
@@ -150,7 +185,7 @@
       reel.innerHTML = "";
       reel.appendChild(wrapper);
 
-      const targetTop = -(spinSymbols.length - visibleSymbols) * 80;
+      const targetTop = -(spinSymbols.length - 3) * 80;
       setTimeout(() => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -170,9 +205,11 @@
       knob.classList.add("pulled");
 
       const email = localStorage.getItem('mdav_email') || '';
-      const res = await fetch("https://slot-backend-m7uc.onrender.com/spin", {
+      const res = await fetch("/spin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ email })
       });
       const { reels, isWin, prize } = await res.json();
@@ -187,8 +224,20 @@
 
       if (isWin && prize) {
         showPrizePopup(prize);
+        document.getElementById('user-history').innerHTML =
+          `🎯 抽中：<strong>${prize}</strong>`;
       }
     });
+
+    window.onload = () => {
+      const email = localStorage.getItem('mdav_email');
+      if (!email) {
+        document.getElementById('emailPrompt').style.display = 'flex';
+      } else {
+        document.getElementById('emailPrompt').style.display = 'none';
+        loadUserRecord();
+      }
+    };
   </script>
 </body>
 </html>
