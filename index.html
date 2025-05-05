@@ -83,109 +83,112 @@
 </head>
 <body>
 
-<!-- 中獎提示彈窗 -->
-<div id="prizeModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: none; align-items: center; justify-content: center;">
-  <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
-    <h2>🎉 恭喜中獎！</h2>
-    <p id="prizeMessage" style="font-size: 20px;"></p>
-    <button onclick="document.getElementById('prizeModal').style.display='none'" style="margin-top: 20px; padding: 10px 20px; font-size: 16px;">關閉</button>
+  <h1>麻豆傳媒超級拉霸</h1>
+  <div class="slot-machine" style="position: relative;">
+    <div class="reel" id="reel1"></div>
+    <div class="reel" id="reel2"></div>
+    <div class="reel" id="reel3"></div>
+    <div class="lever">
+      <div class="knob" id="knob"></div>
+    </div>
   </div>
-</div>
 
-<h1>麻豆傳媒超級拉霸</h1>
-<div class="slot-machine" style="position: relative;">
-  <div class="reel" id="reel1"></div>
-  <div class="reel" id="reel2"></div>
-  <div class="reel" id="reel3"></div>
-  <div class="lever">
-    <div class="knob" id="knob"></div>
+  <!-- ✅ 中獎提示彈窗 -->
+  <div id="prizeModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
+      <h2>🎉 恭喜中獎！</h2>
+      <p id="prizeMessage" style="font-size: 20px;"></p>
+      <button onclick="document.getElementById('prizeModal').style.display='none'" style="margin-top: 20px; padding: 10px 20px; font-size: 16px;">關閉</button>
+    </div>
   </div>
-</div>
 
-<script>
-  const symbolImages = {
-    star: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
-    diamond: "https://cdn-icons-png.flaticon.com/512/833/833472.png",
-    logo: "https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/M-logo_black.png"
-  };
+  <!-- ✅ LOGO -->
+  <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png"
+       alt="品牌 Logo"
+       style="width: 400px; margin-top: 30px; display: block; margin-left: auto; margin-right: auto;">
 
-  const reelCount = 3;
-  const visibleSymbols = 3;
+  <script>
+    const symbolImages = {
+      star: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+      diamond: "https://cdn-icons-png.flaticon.com/512/833/833472.png",
+      logo: "https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/M-logo_black.png"
+    };
 
-  function showPrizePopup(prize) {
-    document.getElementById('prizeMessage').textContent = prize;
-    document.getElementById('prizeModal').style.display = 'flex';
-  }
+    const reelCount = 3;
+    const visibleSymbols = 3;
 
-  function createReelSymbols(length, result) {
-    const pool = ['star', 'diamond', 'logo'];
-    const arr = [];
-    for (let i = 0; i < length; i++) {
-      arr.push(pool[Math.floor(Math.random() * pool.length)]);
+    function showPrizePopup(prize) {
+      document.getElementById('prizeMessage').textContent = prize;
+      document.getElementById('prizeModal').style.display = 'flex';
     }
-    return arr.concat(result);
-  }
 
-  function spinReelWithAnimation(reel, result, delay = 0) {
-    const totalSymbols = 20;
-    const spinSymbols = createReelSymbols(totalSymbols, result);
+    function createReelSymbols(length, result) {
+      const pool = ['star', 'diamond', 'logo'];
+      const arr = [];
+      for (let i = 0; i < length; i++) {
+        arr.push(pool[Math.floor(Math.random() * pool.length)]);
+      }
+      return arr.concat(result);
+    }
 
-    const wrapper = document.createElement("div");
-    wrapper.style.position = "absolute";
-    wrapper.style.top = "0";
-    wrapper.style.width = "100%";
+    function spinReelWithAnimation(reel, result, delay = 0) {
+      const totalSymbols = 20;
+      const spinSymbols = createReelSymbols(totalSymbols, result);
 
-    spinSymbols.forEach(sym => {
-      const div = document.createElement("div");
-      div.className = "symbol";
-      div.innerHTML = `<img src="${symbolImages[sym] || 'https://via.placeholder.com/60?text=?'}" alt="${sym}" style="height: 60px;">`;
-      wrapper.appendChild(div);
-    });
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "absolute";
+      wrapper.style.top = "0";
+      wrapper.style.width = "100%";
 
-    reel.innerHTML = "";
-    reel.appendChild(wrapper);
-
-    const targetTop = -(spinSymbols.length - visibleSymbols) * 80;
-    setTimeout(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          wrapper.style.transition = "top 1.5s cubic-bezier(0.33, 1, 0.68, 1)";
-          wrapper.style.top = `${targetTop}px`;
-        });
+      spinSymbols.forEach(sym => {
+        const div = document.createElement("div");
+        div.className = "symbol";
+        div.innerHTML = `<img src="${symbolImages[sym] || 'https://via.placeholder.com/60?text=?'}" alt="${sym}" style="height: 60px;">`;
+        wrapper.appendChild(div);
       });
-    }, delay);
 
-    return new Promise(resolve => {
-      setTimeout(() => resolve(wrapper), delay + 1600);
-    });
-  }
+      reel.innerHTML = "";
+      reel.appendChild(wrapper);
 
-  document.getElementById("knob").addEventListener("click", async (e) => {
-    const knob = e.currentTarget;
-    knob.classList.add("pulled");
+      const targetTop = -(spinSymbols.length - visibleSymbols) * 80;
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            wrapper.style.transition = "top 1.5s cubic-bezier(0.33, 1, 0.68, 1)";
+            wrapper.style.top = `${targetTop}px`;
+          });
+        });
+      }, delay);
 
-    const email = localStorage.getItem('mdav_email') || '';
-    const res = await fetch("https://slot-backend-m7uc.onrender.com/spin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email })
-    });
-    const { reels, isWin, prize } = await res.json();
-
-    const wrappers = await Promise.all([
-      spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-      spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-      spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
-    ]);
-
-    setTimeout(() => knob.classList.remove("pulled"), 400);
-
-    if (isWin && prize) {
-      showPrizePopup(prize);
+      return new Promise(resolve => {
+        setTimeout(() => resolve(wrapper), delay + 1600);
+      });
     }
-  });
-</script>
+
+    document.getElementById("knob").addEventListener("click", async (e) => {
+      const knob = e.currentTarget;
+      knob.classList.add("pulled");
+
+      const email = localStorage.getItem('mdav_email') || '';
+      const res = await fetch("https://slot-backend-m7uc.onrender.com/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const { reels, isWin, prize } = await res.json();
+
+      const wrappers = await Promise.all([
+        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
+        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
+        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
+      ]);
+
+      setTimeout(() => knob.classList.remove("pulled"), 400);
+
+      if (isWin && prize) {
+        showPrizePopup(prize);
+      }
+    });
+  </script>
 </body>
 </html>
