@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>拉霸機 Demo</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       background: #888;
       color: #fff;
@@ -93,14 +91,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+
+  <!-- ✅ 新增：活動詳情彈窗 -->
+  <div id="introModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; text-align: center; color: black;">
+      <h2 style="margin-top: 0;">🎰 活動說明</h2>
+      <p>歡迎參加<strong>麻豆傳媒超級拉霸機</strong>活動！</p> <!-- 👉可修改：活動名稱 -->
+      <p>輸入您在<strong>麻豆國際版</strong>註冊的會員信箱，即可免費抽獎一次，有機會獲得 VIP、折扣碼等驚喜好禮！</p> <!-- 👉可修改：參加方式與獎品內容 -->
+      <p>每人每日限抽一次，快來試試手氣吧！</p> <!-- 👉可修改：規則提醒 -->
+      <br>
+      <button onclick="confirmIntro()" style="padding: 10px 20px; font-size: 16px;">我已了解</button> <!-- 👉可修改：按鈕文字 -->
+    </div>
+  </div>
+
+  <!-- ✅ 原有：信箱輸入彈窗 -->
+  <div id="emailPrompt" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9998; display: none; align-items: center; justify-content: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center; color: black;">
-      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊時的會員帳號</p>
+      <p style="font-weight: bold; font-size: 18px;">請輸入您在 <strong>麻豆國際版</strong> 註冊時的會員帳號</p> <!-- 👉可修改 -->
       <input type="email" id="userEmail" placeholder="輸入信箱" style="margin-top: 10px; padding: 8px; width: 90%; font-size: 16px;" required>
       <br><br>
       <button onclick="submitEmail()" style="padding: 10px 20px; font-size: 16px;">確認</button>
     </div>
   </div>
+
+  <!-- 拉霸主畫面 -->
   <h1 style="text-shadow: 1px 1px #000; font-family: 'Noto Sans TC', sans-serif; letter-spacing: 8px;">麻豆傳媒超級拉霸</h1>
   <div class="slot-machine" style="position: relative;">
     <div class="reel" id="reel1"></div>
@@ -195,7 +209,7 @@
         alert("🎉 中獎啦！\n獎品：" + prize);
       }
     });
-  
+
     function submitEmail() {
       const email = document.getElementById('userEmail').value.trim();
       if (!email || !email.includes('@')) {
@@ -206,15 +220,25 @@
       document.getElementById('emailPrompt').style.display = 'none';
     }
 
+    function confirmIntro() {
+      localStorage.setItem('seenIntro', 'yes');
+      document.getElementById('introModal').style.display = 'none';
+      document.getElementById('emailPrompt').style.display = 'flex';
+    }
+
     window.onload = () => {
-      const stored = localStorage.getItem('mdav_email');
-      if (!stored) {
-        document.getElementById('emailPrompt').style.display = 'flex';
-      } else {
+      const seenIntro = localStorage.getItem('seenIntro');
+      const storedEmail = localStorage.getItem('mdav_email');
+
+      if (!seenIntro) {
+        document.getElementById('introModal').style.display = 'flex';
         document.getElementById('emailPrompt').style.display = 'none';
+      } else if (!storedEmail) {
+        document.getElementById('emailPrompt').style.display = 'flex';
       }
     };
-</script>
+  </script>
+
   <img src="https://raw.githubusercontent.com/EchoLupsu/anime-code-tease/main/assets/LOGO_black.png" alt="品牌 Logo" style="width: 400px; margin-top: 30px;">
 </body>
 </html>
