@@ -144,30 +144,35 @@
     }
 
     async function spinReelWithAnimation(reel, symbols, delay = 0) {
-      console.log('[動畫] symbols =', symbols);
+  console.log('[動畫] symbols =', symbols);
 
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "absolute";
-      wrapper.style.top = "0px";
-      wrapper.style.transition = "top 1.5s ease-in-out";
-      wrapper.style.width = "100%";
-      symbols.forEach(sym => {
-        const div = document.createElement("div");
-        div.className = "symbol";
-        div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
-        wrapper.appendChild(div);
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "absolute";
+  wrapper.style.top = "0px";
+  wrapper.style.width = "100%";
+  wrapper.style.transition = "top 1.5s ease-in-out";
+
+  symbols.forEach(sym => {
+    const div = document.createElement("div");
+    div.className = "symbol";
+    div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
+    wrapper.appendChild(div);
+  });
+
+  reel.innerHTML = "";
+  reel.appendChild(wrapper);
+  const targetTop = -(symbols.length - 3) * 80;
+
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        wrapper.style.top = `${targetTop}px`;
       });
-      reel.innerHTML = "";
-      reel.appendChild(wrapper);
-      const targetTop = -(symbols.length - 3) * 80;
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          wrapper.style.transition = "top 1.5s ease-in-out";
-          wrapper.style.top = `${targetTop}px`;
-        });
-      }, delay);
-      return new Promise(resolve => setTimeout(() => resolve(wrapper), delay + 1600));
-    }
+    });
+  }, delay);
+
+  return new Promise(resolve => setTimeout(() => resolve(wrapper), delay + 1600));
+}
 
     document.getElementById("knob").addEventListener("click", async () => {
       const knob = document.getElementById("knob");
