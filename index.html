@@ -1,168 +1,47 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>拉霸機 Demo</title>
+  <title>拉霸機簡化版</title>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      background: #888;
-      color: #fff;
-      font-family: 'Georgia', serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .slot-machine {
-      display: flex;
-      background: #e66b5b;
-      padding: 30px;
-      border-radius: 50px;
-      box-shadow: 0 8px 0 #222;
-      border: 4px solid #fff;
-      position: relative;
-    }
-    .reel {
-      width: 100px;
-      height: 240px;
-      margin: 0 15px;
-      overflow: hidden;
-      background: #fdf7ec;
-      border-radius: 16px;
-      box-shadow: inset 0 0 10px #999;
-      position: relative;
-    }
-    .symbol {
-      width: 100%;
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      color: #0c2d42;
-      font-weight: bold;
-      border-bottom: 1px solid #ccc;
-    }
-    .lever {
-      position: absolute;
-      right: -100px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 30px;
-      height: 160px;
-      background: #e66b5b;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #fff;
-    }
-    .knob {
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 60px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 20px #fff;
-      cursor: pointer;
-      transition: transform 0.4s ease;
-    }
-    .knob.pulled {
-      transform: translateX(-50%) translateY(120px);
-    }
+    body { background: #333; color: #fff; font-family: sans-serif; text-align: center; }
+    .reel { width: 100px; height: 240px; margin: 0 10px; overflow: hidden; background: #fff; display: inline-block; }
+    .symbol { height: 80px; display: flex; align-items: center; justify-content: center; }
+    #lever { margin: 20px; cursor: pointer; background: #f00; padding: 10px 20px; display: inline-block; }
   </style>
 </head>
 <body>
-  <h1>麻豆傳媒超級拉霸</h1>
-  <div class="slot-machine">
+  <h1>拉霸抽獎</h1>
+  <div id="reels">
     <div class="reel" id="reel1"></div>
     <div class="reel" id="reel2"></div>
     <div class="reel" id="reel3"></div>
-    <div class="lever">
-      <div class="knob" id="knob"></div>
-    </div>
   </div>
-  <div id="prizeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-    <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center; color:black;">
-      <h2>🎉 恭喜中獎！</h2>
-      <p id="prizeMessage" style="font-size:20px;"></p>
-      <button onclick="document.getElementById('prizeModal').style.display='none'">關閉</button>
-    </div>
-  </div>
+  <div id="lever">拉一下</div>
+  <div id="result"></div>
+
   <script>
-    const API_BASE = 'https://slot-backend-m7uc.onrender.com';
-    let pool = ['star', 'diamond', 'logo'];
-
-    async function loadSymbolsFromConfig() {
-      try {
-        const res = await fetch(`${API_BASE}/config`);
-        const config = await res.json();
-        const keys = new Set([
-          ...Object.keys(config.match2 || {}),
-          ...Object.keys(config.match3 || {})
-        ]);
-        pool = Array.from(keys);
-      } catch (err) {
-        console.error('讀取圖案失敗，使用預設圖案', err);
-      }
-    }
-
-    function showPrizePopup(prize) {
-      document.getElementById('prizeMessage').textContent = prize;
-      document.getElementById('prizeModal').style.display = 'flex';
-    }
-
-    async function spinReelWithAnimation(reel, symbols, delay = 0) {
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "absolute";
-      wrapper.style.top = "0";
-      wrapper.style.width = "100%";
-      symbols.forEach(sym => {
-        const div = document.createElement("div");
-        div.className = "symbol";
-        div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
-        wrapper.appendChild(div);
+    const API = '/api';
+    document.getElementById("lever").onclick = async () => {
+      const res = await fetch(API + "/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: localStorage.getItem("email") || "test@example.com" })
       });
-      reel.innerHTML = "";
-      reel.appendChild(wrapper);
-      const targetTop = -(symbols.length - 3) * 80;
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          wrapper.style.transition = "top 1.5s ease-in-out";
-          wrapper.style.top = `${targetTop}px`;
+      const data = await res.json();
+      [reel1, reel2, reel3].forEach((reel, i) => {
+        reel.innerHTML = "";
+        data.reels[i].forEach(sym => {
+          const div = document.createElement("div");
+          div.className = "symbol";
+          div.innerHTML = `<img src="/icons/${sym}.png" style="height:60px;" />`;
+          reel.appendChild(div);
         });
-      }, delay);
-      return new Promise(resolve => setTimeout(() => resolve(wrapper), delay + 1600));
-    }
-
-    document.getElementById("knob").addEventListener("click", async () => {
-      const knob = document.getElementById("knob");
-      knob.classList.add("pulled");
-
-      try {
-        const res = await fetch(`${API_BASE}/spin`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: localStorage.getItem('mdav_email') || 'guest@test.com' })
-        });
-        const { reels, isWin, prize } = await res.json();
-        await Promise.all([
-          spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-          spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-          spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
-        ]);
-        setTimeout(() => knob.classList.remove("pulled"), 400);
-        if (isWin && prize) showPrizePopup(prize);
-      } catch (err) {
-        alert("抽獎錯誤，請稍後再試！");
-      }
-    });
-
-    loadSymbolsFromConfig();
+      });
+      document.getElementById("result").innerText = data.prize ? `🎉 中獎：${data.prize}` : "😭 沒中獎";
+    };
   </script>
 </body>
 </html>
