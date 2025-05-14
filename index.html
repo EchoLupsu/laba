@@ -144,9 +144,12 @@
     }
 
     async function spinReelWithAnimation(reel, symbols, delay = 0) {
+      console.log('[動畫] symbols =', symbols);
+
       const wrapper = document.createElement("div");
       wrapper.style.position = "absolute";
-      wrapper.style.top = "0";
+      wrapper.style.top = "0px";
+      wrapper.style.transition = "top 1.5s ease-in-out";
       wrapper.style.width = "100%";
       symbols.forEach(sym => {
         const div = document.createElement("div");
