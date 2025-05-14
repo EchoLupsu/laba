@@ -108,8 +108,9 @@
           ...Object.keys(config.match3 || {})
         ]);
         pool = Array.from(keys);
+        console.log('[前端][config] pool =', pool);
       } catch (err) {
-        console.error('讀取圖案失敗，使用預設圖案', err);
+        console.error('[前端][error] 無法載入 config 設定', err);
       }
     }
 
@@ -144,14 +145,19 @@
     document.getElementById("knob").addEventListener("click", async () => {
       const knob = document.getElementById("knob");
       knob.classList.add("pulled");
+      const email = localStorage.getItem('mdav_email') || 'guest@test.com';
+      console.log('[前端] 送出抽獎 email =', email);
 
       try {
         const res = await fetch(`${API_BASE}/spin`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: localStorage.getItem('mdav_email') || 'guest@test.com' })
+          body: JSON.stringify({ email })
         });
         const { reels, isWin, prize } = await res.json();
+        console.log('[前端] 抽獎結果 reels =', reels);
+        console.log('[前端] 是否中獎 =', isWin, '| 獎品 =', prize);
+
         await Promise.all([
           spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
           spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
@@ -160,6 +166,7 @@
         setTimeout(() => knob.classList.remove("pulled"), 400);
         if (isWin && prize) showPrizePopup(prize);
       } catch (err) {
+        console.error('[前端][error] 抽獎失敗', err);
         alert("抽獎錯誤，請稍後再試！");
       }
     });
