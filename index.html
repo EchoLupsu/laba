@@ -96,22 +96,46 @@
   </div>
 
   <script>
-    const API_BASE = 'https://slot-backend-m7uc.onrender.com/api';
-    let pool = ['star', 'diamond', 'logo'];
-
-    async function loadSymbolsFromConfig() {
-      try {
-        const res = await fetch(`${API_BASE}/config`);
-        const config = await res.json();
-        const keys = new Set([
-          ...Object.keys(config.match2 || {}),
-          ...Object.keys(config.match3 || {})
-        ]);
-        pool = Array.from(keys);
-        console.log('[前端][config] pool =', pool);
-      } catch (err) {
-        console.error('[前端][error] 無法載入 config 設定', err);
+    const symbols = ['star', 'diamond', 'logo'];
+    const prizeConfig = {
+      match3: {
+        star: { prize: '🎯 三星 VIP 資格', weight: 20 },
+        diamond: { prize: '🎯 三鑽超值禮包', weight: 10 },
+        logo: { prize: '🎯 LOGO 獨家週邊', weight: 5 }
+      },
+      match2: {
+        star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 50 },
+        diamond: { prize: '💎 兩鑽折扣券', weight: 40 },
+        logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 30 }
       }
+    };
+
+    function getRandomSymbol() {
+      return symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    function generateReels() {
+      return Array.from({ length: 3 }, () =>
+        Array.from({ length: 3 }, () => getRandomSymbol())
+      );
+    }
+
+    function checkPrize(row) {
+      const counts = row.reduce((acc, sym) => {
+        acc[sym] = (acc[sym] || 0) + 1;
+        return acc;
+      }, {});
+      for (let sym in counts) {
+        if (counts[sym] === 3 && prizeConfig.match3[sym]) {
+          const chance = prizeConfig.match3[sym].weight;
+          if (Math.random() * 100 < chance) return prizeConfig.match3[sym].prize;
+        }
+        if (counts[sym] === 2 && prizeConfig.match2[sym]) {
+          const chance = prizeConfig.match2[sym].weight;
+          if (Math.random() * 100 < chance) return prizeConfig.match2[sym].prize;
+        }
+      }
+      return null;
     }
 
     function showPrizePopup(prize) {
@@ -145,33 +169,19 @@
     document.getElementById("knob").addEventListener("click", async () => {
       const knob = document.getElementById("knob");
       knob.classList.add("pulled");
-      const email = localStorage.getItem('mdav_email') || 'guest@test.com';
-      console.log('[前端] 送出抽獎 email =', email);
 
-      try {
-        const res = await fetch(`${API_BASE}/spin`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        });
-        const { reels, isWin, prize } = await res.json();
-        console.log('[前端] 抽獎結果 reels =', reels);
-        console.log('[前端] 是否中獎 =', isWin, '| 獎品 =', prize);
+      const reels = generateReels();
+      const middle = [reels[0][1], reels[1][1], reels[2][1]];
+      const prize = checkPrize(middle);
 
-        await Promise.all([
-          spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-          spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-          spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
-        ]);
-        setTimeout(() => knob.classList.remove("pulled"), 400);
-        if (isWin && prize) showPrizePopup(prize);
-      } catch (err) {
-        console.error('[前端][error] 抽獎失敗', err);
-        alert("抽獎錯誤，請稍後再試！");
-      }
+      await Promise.all([
+        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
+        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
+        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
+      ]);
+      setTimeout(() => knob.classList.remove("pulled"), 400);
+      if (prize) showPrizePopup(prize);
     });
-
-    loadSymbolsFromConfig();
   </script>
 </body>
 </html>
