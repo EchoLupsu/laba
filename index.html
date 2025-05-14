@@ -116,7 +116,7 @@
 
     function generateReels() {
       return Array.from({ length: 3 }, () =>
-        Array.from({ length: 3 }, () => getRandomSymbol())
+        Array.from({ length: 20 }, () => getRandomSymbol())
       );
     }
 
@@ -144,42 +144,37 @@
     }
 
     async function spinReelWithAnimation(reel, symbols, delay = 0) {
-  console.log('[動畫] symbols =', symbols);
+      console.log('[動畫] symbols =', symbols);
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "absolute";
+      wrapper.style.width = "100%";
+      wrapper.style.transform = "translateY(0px)";
+      wrapper.style.transition = "transform 1.5s ease-in-out";
 
-  const wrapper = document.createElement("div");
-  wrapper.style.position = "absolute";
-  wrapper.style.top = "0px";
-  wrapper.style.width = "100%";
-  wrapper.style.transition = "top 1.5s ease-in-out";
-
-  symbols.forEach(sym => {
-    const div = document.createElement("div");
-    div.className = "symbol";
-    div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
-    wrapper.appendChild(div);
-  });
-
-  reel.innerHTML = "";
-  reel.appendChild(wrapper);
-  const targetTop = -(symbols.length - 3) * 80;
-
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        wrapper.style.top = `${targetTop}px`;
+      symbols.forEach(sym => {
+        const div = document.createElement("div");
+        div.className = "symbol";
+        div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
+        wrapper.appendChild(div);
       });
-    });
-  }, delay);
 
-  return new Promise(resolve => setTimeout(() => resolve(wrapper), delay + 1600));
-}
+      reel.innerHTML = "";
+      reel.appendChild(wrapper);
+
+      const offset = (symbols.length - 3) * 80;
+      setTimeout(() => {
+        wrapper.style.transform = `translateY(-${offset}px)`;
+      }, delay);
+
+      return new Promise(resolve => setTimeout(() => resolve(), delay + 1600));
+    }
 
     document.getElementById("knob").addEventListener("click", async () => {
       const knob = document.getElementById("knob");
       knob.classList.add("pulled");
 
       const reels = generateReels();
-      const middle = [reels[0][1], reels[1][1], reels[2][1]];
+      const middle = [reels[0][reels[0].length - 2], reels[1][reels[1].length - 2], reels[2][reels[2].length - 2]];
       const prize = checkPrize(middle);
 
       await Promise.all([
