@@ -4,103 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>拉霸機 Demo</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      background: #888;
-      color: #fff;
-      font-family: 'Georgia', serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .slot-machine {
-      display: flex;
-      background: #e66b5b;
-      padding: 30px;
-      border-radius: 50px;
-      box-shadow: 0 8px 0 #222;
-      border: 4px solid #fff;
-      position: relative;
-    }
-    .reel {
-      width: 100px;
-      height: 240px;
-      margin: 0 15px;
-      overflow: hidden;
-      background: #fdf7ec;
-      border-radius: 16px;
-      box-shadow: inset 0 0 10px #999;
-      position: relative;
-    }
-    .symbol {
-      width: 100%;
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      color: #0c2d42;
-      font-weight: bold;
-      border-bottom: 1px solid #ccc;
-    }
-    .lever {
-      position: absolute;
-      right: -100px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 30px;
-      height: 160px;
-      background: #e66b5b;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #fff;
-    }
-    .knob {
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 60px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 20px #fff;
-      cursor: pointer;
-      transition: transform 0.4s ease;
-    }
-    .knob.pulled {
-      transform: translateX(-50%) translateY(120px);
-    }
-    #introModal, #emailModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-    #introModalBox, #emailModalBox {
-      background: #fff;
-      color: #000;
-      padding: 30px;
-      border-radius: 12px;
-      text-align: center;
-      max-width: 400px;
-    }
-    #emailInput {
-      width: 80%;
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-  </style>
 </head>
 <body>
   <h1>麻豆傳媒超級拉霸</h1>
+  <div id="resultLog" style="margin: 20px auto; font-size: 18px; text-align: center; color: white;"></div>
   <div class="slot-machine">
     <div class="reel" id="reel1"></div>
     <div class="reel" id="reel2"></div>
@@ -110,133 +17,154 @@
     </div>
   </div>
 
-  <div id="prizeModal" style="display:none;"></div>
-
-  <div id="introModal">
-    <div id="introModalBox">
-      <h2>🎉 活動公告</h2>
-      <p>歡迎參加《麻豆傳媒超級拉霸》活動！</p>
-      <p>輸入信箱即可參加抽獎，每人每日限抽一次，有機會獲得 VIP 資格與限定獎勵！</p>
-      <br>
-      <button onclick="confirmIntro()">我知道了</button>
-    </div>
+  <!-- Intro 活動公告彈窗 -->
+<div id="introModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+  <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; color: black;">
+    <h2>🎉 活動公告</h2>
+    <p>歡迎參加《麻豆傳媒超級拉霸》活動！</p>
+    <p>輸入信箱即可參加抽獎，每人每日限抽一次，有機會獲得 VIP 資格與限定獎勵！</p>
+    <br>
+    <button onclick="confirmIntro()">我知道了</button>
   </div>
+</div>
 
-  <div id="emailModal">
-    <div id="emailModalBox">
-      <h2>請輸入您的會員信箱</h2>
-      <input type="email" id="emailInput" placeholder="example@email.com" required />
-      <br><br>
-      <button onclick="saveEmail()">確認</button>
-    </div>
+<!-- Email 輸入彈窗 -->
+<div id="emailModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 10000;">
+  <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; color: black;">
+    <h2>請輸入您的會員信箱</h2>
+    <input type="email" id="emailInput" placeholder="example@email.com" style="width: 80%; padding: 10px; font-size: 16px; margin-top: 10px;" required />
+    <br><br>
+    <button onclick="saveEmail()">確認</button>
   </div>
+</div>
 
+  <!-- 原始完整 JS 腳本區塊（已包含註解與抽獎邏輯） -->
   <script>
-    const symbols = ['star', 'diamond', 'logo'];
-    const prizeConfig = {
-      match3: {
-        star: { prize: '🎯 三星 VIP 資格', weight: 20 },
-        diamond: { prize: '🎯 三鑽超值禮包', weight: 10 },
-        logo: { prize: '🎯 LOGO 獨家週邊', weight: 5 }
-      },
-      match2: {
-        star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 50 },
-        diamond: { prize: '💎 兩鑽折扣券', weight: 40 },
-        logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 30 }
-      }
-    };
+    // 📢 使用者點『我知道了』後才顯示輸入信箱彈窗
+function confirmIntro() {
+  document.getElementById('introModal').style.display = 'none';
+  const email = localStorage.getItem('slot_email');
+  if (!email) {
+    document.getElementById('emailModal').style.display = 'flex';
+  }
+}
 
-    function confirmIntro() {
-      document.getElementById('introModal').style.display = 'none';
-      const email = localStorage.getItem('slot_email');
-      if (!email) {
-        document.getElementById('emailModal').style.display = 'flex';
-      }
+// 📩 儲存使用者輸入的信箱到瀏覽器記憶空間
+function saveEmail() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email.includes('@')) return alert('請輸入有效的信箱');
+  localStorage.setItem('slot_email', email);
+  document.getElementById('emailModal').style.display = 'none';
+  console.log('[前端] 儲存 email:', email);
+}
+
+// 🚀 網頁打開時，自動顯示活動公告
+window.onload = () => {
+  document.getElementById('introModal').style.display = 'flex';
+};
+  // 🎰 定義轉輪可能圖案
+const symbols = ['star', 'diamond', 'logo'];
+
+// 🎁 中獎邏輯與機率設定
+const prizeConfig = {
+  match3: {
+    star: { prize: '🎯 三星 VIP 資格', weight: 20 },
+    diamond: { prize: '🎯 三鑽超值禮包', weight: 10 },
+    logo: { prize: '🎯 LOGO 獨家週邊', weight: 5 }
+  },
+  match2: {
+    star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 50 },
+    diamond: { prize: '💎 兩鑽折扣券', weight: 40 },
+    logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 30 }
+  }
+};
+
+// 🔄 隨機取得一個圖案
+function getRandomSymbol() {
+  return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+// 🎲 建立每個輪子 20 格圖案
+function generateReels() {
+  return Array.from({ length: 3 }, () =>
+    Array.from({ length: 20 }, () => getRandomSymbol())
+  );
+}
+
+// 🧠 判斷是否中獎
+function checkPrize(row) {
+  const counts = row.reduce((acc, sym) => {
+    acc[sym] = (acc[sym] || 0) + 1;
+    return acc;
+  }, {});
+  for (let sym in counts) {
+    if (counts[sym] === 3 && prizeConfig.match3[sym]) {
+      if (Math.random() * 100 < prizeConfig.match3[sym].weight)
+        return prizeConfig.match3[sym].prize;
     }
-
-    function saveEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      if (!email.includes('@')) return alert('請輸入有效的信箱');
-      localStorage.setItem('slot_email', email);
-      document.getElementById('emailModal').style.display = 'none';
-      console.log('[前端] 儲存 email:', email);
+    if (counts[sym] === 2 && prizeConfig.match2[sym]) {
+      if (Math.random() * 100 < prizeConfig.match2[sym].weight)
+        return prizeConfig.match2[sym].prize;
     }
+  }
+  return null;
+}
 
-    window.onload = () => {
-      document.getElementById('introModal').style.display = 'flex';
-    };
+// 🎞️ 轉輪動畫
+async function spinReelWithAnimation(reel, symbols, delay = 0) {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "absolute";
+  wrapper.style.width = "100%";
+  wrapper.style.transform = "translateY(0px)";
+  wrapper.style.transition = "transform 1.5s ease-in-out";
 
-    function getRandomSymbol() {
-      return symbols[Math.floor(Math.random() * symbols.length)];
-    }
+  symbols.forEach(sym => {
+    const div = document.createElement("div");
+    div.className = "symbol";
+    div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
+    wrapper.appendChild(div);
+  });
 
-    function generateReels() {
-      return Array.from({ length: 3 }, () =>
-        Array.from({ length: 20 }, () => getRandomSymbol())
-      );
-    }
+  reel.innerHTML = "";
+  reel.appendChild(wrapper);
+  const offset = (symbols.length - 3) * 80;
 
-    function checkPrize(row) {
-      const counts = row.reduce((acc, sym) => {
-        acc[sym] = (acc[sym] || 0) + 1;
-        return acc;
-      }, {});
-      for (let sym in counts) {
-        if (counts[sym] === 3 && prizeConfig.match3[sym]) {
-          const chance = prizeConfig.match3[sym].weight;
-          if (Math.random() * 100 < chance) return prizeConfig.match3[sym].prize;
-        }
-        if (counts[sym] === 2 && prizeConfig.match2[sym]) {
-          const chance = prizeConfig.match2[sym].weight;
-          if (Math.random() * 100 < chance) return prizeConfig.match2[sym].prize;
-        }
-      }
-      return null;
-    }
+  setTimeout(() => {
+    wrapper.style.transform = `translateY(-${offset}px)`;
+  }, delay);
 
-    function showPrizePopup(prize) {
-      alert('🎉 恭喜中獎：' + prize);
-    }
+  return new Promise(resolve => setTimeout(resolve, delay + 1600));
+}
 
-    async function spinReelWithAnimation(reel, symbols, delay = 0) {
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "absolute";
-      wrapper.style.width = "100%";
-      wrapper.style.transform = "translateY(0px)";
-      wrapper.style.transition = "transform 1.5s ease-in-out";
-      symbols.forEach(sym => {
-        const div = document.createElement("div");
-        div.className = "symbol";
-        div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
-        wrapper.appendChild(div);
-      });
-      reel.innerHTML = "";
-      reel.appendChild(wrapper);
-      const offset = (symbols.length - 3) * 80;
-      setTimeout(() => {
-        wrapper.style.transform = `translateY(-${offset}px)`;
-      }, delay);
-      return new Promise(resolve => setTimeout(resolve, delay + 1600));
-    }
+// 🕹️ 拉桿事件：產生 reels、播放動畫、顯示結果
 
-    document.getElementById("knob").addEventListener("click", async () => {
-      const knob = document.getElementById("knob");
-      knob.classList.add("pulled");
-      const reels = generateReels();
-      const middle = [
-        reels[0][reels[0].length - 2],
-        reels[1][reels[1].length - 2],
-        reels[2][reels[2].length - 2]
-      ];
-      const prize = checkPrize(middle);
-      await Promise.all([
-        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600),
-      ]);
-      setTimeout(() => knob.classList.remove("pulled"), 400);
-      if (prize) showPrizePopup(prize);
-    });
-  </script>
+const knob = document.getElementById("knob");
+if (knob) {
+  knob.addEventListener("click", async () => {
+    knob.classList.add("pulled");
+
+    const reels = generateReels();
+    const middle = [
+      reels[0][reels[0].length - 2],
+      reels[1][reels[1].length - 2],
+      reels[2][reels[2].length - 2]
+    ];
+    const prize = checkPrize(middle);
+
+    await Promise.all([
+      spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
+      spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
+      spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600)
+    ]);
+
+    setTimeout(() => knob.classList.remove("pulled"), 400);
+
+    // 顯示結果
+    document.getElementById('resultLog').innerText = `本次結果：${middle.join(' - ')}
+${prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～'}`;
+    if (prize) alert('🎉 恭喜中獎：' + prize);
+  });
+}
+</script>
 </body>
 </html>
