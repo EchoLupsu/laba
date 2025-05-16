@@ -175,10 +175,11 @@
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
     }
+    //用來控制每日一次的，將注釋刪除後可行
     function canSpin() {
-      const email = localStorage.getItem('slot_email');
-      const lastPlay = localStorage.getItem('slot_lastPlay');
-      return email && lastPlay !== todayStr();
+      //const email = localStorage.getItem('slot_email');
+      //const lastPlay = localStorage.getItem('slot_lastPlay');
+      //return email && lastPlay !== todayStr();
     }
     function savePlayDate() {
       localStorage.setItem('slot_lastPlay', todayStr());
