@@ -120,6 +120,9 @@
 </div>
 
   <script>
+    // --- TEST MODE 開關 ---
+    const TEST_MODE = true; // 測試時設為 true，上線請改為 false
+
     // --- 配置 ---
     const symbols = ['star', 'diamond', 'logo'];
     const symbolImgs = {
@@ -175,17 +178,25 @@
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
     }
-    //用來控制每日一次的，將注釋刪除後可行
+    //用來控制每日一次的，測試模式下 always return true
     function canSpin() {
-      return true; // Always allow spinning for testing
+      if (TEST_MODE) return true;
       const email = localStorage.getItem('slot_email');
       const lastPlay = localStorage.getItem('slot_lastPlay');
       return email && lastPlay !== todayStr();
     }
     function savePlayDate() {
-      localStorage.setItem('slot_lastPlay', todayStr());
+      if (!TEST_MODE) {
+        localStorage.setItem('slot_lastPlay', todayStr());
+      }
+      // 測試模式下不紀錄日期
     }
     function lockLever(lock) {
+      if (TEST_MODE) {
+        // 測試模式永遠解鎖拉桿
+        document.getElementById('lever').classList.remove('lever-locked');
+        return;
+      }
       const lever = document.getElementById('lever');
       if (lock) lever.classList.add('lever-locked');
       else lever.classList.remove('lever-locked');
@@ -292,8 +303,8 @@
 
         if (prize) alert('🎉 恭喜中獎：' + prize);
 
-        // 鎖定 lever 直到隔天
-        lockLever(true);
+        // 測試模式下不鎖定拉桿
+        if (!TEST_MODE) lockLever(true);
         isSpinning = false;
       });
 
