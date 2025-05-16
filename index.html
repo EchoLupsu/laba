@@ -67,9 +67,19 @@
       box-shadow: 0 0 20px #fff;
       cursor: pointer;
       transition: transform 0.4s ease;
+      z-index: 1;
     }
     .knob.pulled {
       transform: translateX(-50%) translateY(120px);
+    }
+    .knob[disabled] {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    /* Hide lever if locked */
+    .lever.lever-locked .knob {
+      pointer-events: none;
+      opacity: 0.5;
     }
   </style>
   <meta charset="UTF-8" />
@@ -83,12 +93,12 @@
     <div class="reel" id="reel1"></div>
     <div class="reel" id="reel2"></div>
     <div class="reel" id="reel3"></div>
-    <div class="lever">
+    <div class="lever lever-locked" id="lever">
       <div class="knob" id="knob"></div>
     </div>
   </div>
 
-  <!-- Intro 活動公告彈窗 -->
+  <!-- 活動公告彈窗 -->
 <div id="introModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;">
   <div style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; text-align: center; color: black;">
     <h2>🎉 活動公告</h2>
@@ -109,133 +119,190 @@
   </div>
 </div>
 
-  <!-- 原始完整 JS 腳本區塊（已包含註解與抽獎邏輯） -->
   <script>
-    // 📢 使用者點『我知道了』後才顯示輸入信箱彈窗
-function confirmIntro() {
-  document.getElementById('introModal').style.display = 'none';
-  const email = localStorage.getItem('slot_email');
-  if (!email) {
-    document.getElementById('emailModal').style.display = 'flex';
-  }
-}
+    // --- 配置 ---
+    const symbols = ['star', 'diamond', 'logo'];
+    const symbolImgs = {
+      star: '⭐',
+      diamond: '💎',
+      logo: '🅰️'
+    };
 
-// 📩 儲存使用者輸入的信箱到瀏覽器記憶空間
-function saveEmail() {
-  const email = document.getElementById('emailInput').value.trim();
-  if (!email.includes('@')) return alert('請輸入有效的信箱');
-  localStorage.setItem('slot_email', email);
-  document.getElementById('emailModal').style.display = 'none';
-  console.log('[前端] 儲存 email:', email);
-}
+    const prizeConfig = {
+      match3: {
+        star: { prize: '🎯 三星 VIP 資格', weight: 20 },
+        diamond: { prize: '🎯 三鑽超值禮包', weight: 10 },
+        logo: { prize: '🎯 LOGO 獨家週邊', weight: 5 }
+      },
+      match2: {
+        star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 50 },
+        diamond: { prize: '💎 兩鑽折扣券', weight: 40 },
+        logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 30 }
+      }
+    };
 
-// 🚀 網頁打開時，自動顯示活動公告
-
-  // 🎰 定義轉輪可能圖案
-const symbols = ['star', 'diamond', 'logo'];
-
-// 🎁 中獎邏輯與機率設定
-const prizeConfig = {
-  match3: {
-    star: { prize: '🎯 三星 VIP 資格', weight: 20 },
-    diamond: { prize: '🎯 三鑽超值禮包', weight: 10 },
-    logo: { prize: '🎯 LOGO 獨家週邊', weight: 5 }
-  },
-  match2: {
-    star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 50 },
-    diamond: { prize: '💎 兩鑽折扣券', weight: 40 },
-    logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 30 }
-  }
-};
-
-// 🔄 隨機取得一個圖案
-function getRandomSymbol() {
-  return symbols[Math.floor(Math.random() * symbols.length)];
-}
-
-// 🎲 建立每個輪子 20 格圖案
-function generateReels() {
-  return Array.from({ length: 3 }, () =>
-    Array.from({ length: 20 }, () => getRandomSymbol())
-  );
-}
-
-// 🧠 判斷是否中獎
-function checkPrize(row) {
-  const counts = row.reduce((acc, sym) => {
-    acc[sym] = (acc[sym] || 0) + 1;
-    return acc;
-  }, {});
-  for (let sym in counts) {
-    if (counts[sym] === 3 && prizeConfig.match3[sym]) {
-      if (Math.random() * 100 < prizeConfig.match3[sym].weight)
-        return prizeConfig.match3[sym].prize;
+    // --- 公用函式 ---
+    function getRandomSymbol() {
+      return symbols[Math.floor(Math.random() * symbols.length)];
     }
-    if (counts[sym] === 2 && prizeConfig.match2[sym]) {
-      if (Math.random() * 100 < prizeConfig.match2[sym].weight)
-        return prizeConfig.match2[sym].prize;
+    function generateReels() {
+      // 產生每個輪子 20 格圖案
+      return Array.from({ length: 3 }, () =>
+        Array.from({ length: 20 }, () => getRandomSymbol())
+      );
     }
-  }
-  return null;
-}
+    function checkPrize(row) {
+      const counts = row.reduce((acc, sym) => {
+        acc[sym] = (acc[sym] || 0) + 1;
+        return acc;
+      }, {});
+      for (let sym in counts) {
+        if (counts[sym] === 3 && prizeConfig.match3[sym]) {
+          if (Math.random() * 100 < prizeConfig.match3[sym].weight)
+            return prizeConfig.match3[sym].prize;
+        }
+        if (counts[sym] === 2 && prizeConfig.match2[sym]) {
+          if (Math.random() * 100 < prizeConfig.match2[sym].weight)
+            return prizeConfig.match2[sym].prize;
+        }
+      }
+      return null;
+    }
+    function validateEmail(email) {
+      // 比較嚴格的簡單驗證
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+    function canSpin() {
+      const email = localStorage.getItem('slot_email');
+      const lastPlay = localStorage.getItem('slot_lastPlay');
+      return email && lastPlay !== todayStr();
+    }
+    function savePlayDate() {
+      localStorage.setItem('slot_lastPlay', todayStr());
+    }
+    function lockLever(lock) {
+      const lever = document.getElementById('lever');
+      if (lock) lever.classList.add('lever-locked');
+      else lever.classList.remove('lever-locked');
+    }
 
-// 🎞️ 轉輪動畫
-async function spinReelWithAnimation(reel, symbols, delay = 0) {
-  const wrapper = document.createElement("div");
-  wrapper.style.position = "absolute";
-  wrapper.style.width = "100%";
-  wrapper.style.transform = "translateY(0px)";
-  wrapper.style.transition = "transform 1.5s ease-in-out";
+    // --- Modal 流程 ---
+    function confirmIntro() {
+      document.getElementById('introModal').style.display = 'none';
+      const email = localStorage.getItem('slot_email');
+      if (!email) {
+        document.getElementById('emailModal').style.display = 'flex';
+        lockLever(true);
+      } else {
+        document.getElementById('emailModal').style.display = 'none';
+        if (canSpin()) lockLever(false);
+        else lockLever(true);
+      }
+    }
+    function saveEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      if (!validateEmail(email)) return alert('請輸入有效的信箱');
+      localStorage.setItem('slot_email', email);
+      document.getElementById('emailModal').style.display = 'none';
+      if (canSpin()) lockLever(false);
+      else lockLever(true);
+    }
 
-  symbols.forEach(sym => {
-    const div = document.createElement("div");
-    div.className = "symbol";
-    div.innerHTML = `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;">`;
-    wrapper.appendChild(div);
-  });
+    // --- 轉輪動畫 ---
+    async function spinReelWithAnimation(reel, reelSymbols, delay = 0) {
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "absolute";
+      wrapper.style.width = "100%";
+      wrapper.style.transform = "translateY(0px)";
+      wrapper.style.transition = "transform 1.5s cubic-bezier(0.45, 0, 0.55, 1)";
 
-  reel.innerHTML = "";
-  reel.appendChild(wrapper);
-  const offset = (symbols.length - 3) * 80;
+      // 產生 20 格圖案
+      reelSymbols.forEach(sym => {
+        const div = document.createElement("div");
+        div.className = "symbol";
+        // 若圖片不存在則 fallback emoji
+        div.innerHTML =
+          `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;" onerror="this.outerHTML='${symbolImgs[sym]}'">`;
+        wrapper.appendChild(div);
+      });
 
-  setTimeout(() => {
-    wrapper.style.transform = `translateY(-${offset}px)`;
-  }, delay);
+      reel.innerHTML = "";
+      reel.appendChild(wrapper);
+      // 使第18,19,20格落在可視區域
+      const offset = (reelSymbols.length - 3) * 80;
 
-  return new Promise(resolve => setTimeout(resolve, delay + 1600));
-}
+      setTimeout(() => {
+        wrapper.style.transform = `translateY(-${offset}px)`;
+      }, delay);
 
-// 🕹️ 拉桿事件：產生 reels、播放動畫、顯示結果
+      return new Promise(resolve => setTimeout(resolve, delay + 1600));
+    }
 
-window.onload = () => {
-  document.getElementById('introModal').style.display = 'flex';
+    // --- 初始與拉桿事件 ---
+    window.onload = () => {
+      document.getElementById('introModal').style.display = 'flex';
+      lockLever(true);
 
-  const knob = document.getElementById("knob");
-  if (knob) {
-    knob.addEventListener("click", async () => {
-      knob.classList.add("pulled");
+      const knob = document.getElementById("knob");
+      let isSpinning = false;
 
-      const reels = generateReels();
-      const middle = [
-        reels[0][reels[0].length - 2],
-        reels[1][reels[1].length - 2],
-        reels[2][reels[2].length - 2]
-      ];
-      const prize = checkPrize(middle);
+      knob.addEventListener("click", async () => {
+        if (isSpinning) return;
+        if (!canSpin()) {
+          if (!localStorage.getItem('slot_email')) {
+            document.getElementById('emailModal').style.display = 'flex';
+          } else {
+            alert('今天已抽過囉！明天再來試手氣吧！');
+          }
+          return;
+        }
+        isSpinning = true;
+        lockLever(true);
+        knob.classList.add("pulled");
 
-      await Promise.all([
-        spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-        spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-        spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600)
-      ]);
+        // 產生轉輪
+        const reels = generateReels();
+        // 動畫
+        await Promise.all([
+          spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
+          spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
+          spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600)
+        ]);
+        setTimeout(() => knob.classList.remove("pulled"), 400);
 
-      setTimeout(() => knob.classList.remove("pulled"), 400);
+        // 取動畫結束後可見 row, 即 reels[*][17], [18], [19] (最後三格)
+        // 顯示 18,19,20格給使用者，取中間值 [18] (index 17,18,19 zero-based)
+        const middleRow = [
+          reels[0][18],
+          reels[1][18],
+          reels[2][18]
+        ];
+        const prize = checkPrize(middleRow);
 
-      document.getElementById('resultLog').innerText = '本次結果：' + middle.join(' - ') + '\n' + (prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～');
-      if (prize) alert('🎉 恭喜中獎：' + prize);
-    });
-  }
-};
-</script>
+        savePlayDate();
+
+        document.getElementById('resultLog').innerText =
+          '本次結果：' + middleRow.map(sym => symbolImgs[sym]).join(' - ') + '\n' +
+          (prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～');
+
+        if (prize) alert('🎉 恭喜中獎：' + prize);
+
+        // 鎖定 lever 直到隔天
+        lockLever(true);
+        isSpinning = false;
+      });
+
+      // 首頁自動彈窗 & 槓桿狀態
+      if (localStorage.getItem('slot_email')) {
+        if (canSpin()) lockLever(false);
+        else lockLever(true);
+      } else {
+        lockLever(true);
+      }
+    };
+  </script>
 </body>
 </html>
