@@ -284,7 +284,15 @@ window.onload = () => {
 
       setTimeout(() => knob.classList.remove("pulled"), 400);
 
-      document.getElementById('resultLog').innerText = `本次結果：${middle.join(' - ')}
+      document.getElementById('resultLog').innerText = `本次結果：${middle.join(' - ')}\n${prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～'}`;
+      if (prize) alert('🎉 恭喜中獎：' + prize);
+    });
+  }
+};
+</script>
+</body>
+</html>
+
 </script>
 </body>
 </html>
