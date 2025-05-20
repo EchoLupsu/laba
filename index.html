@@ -285,13 +285,13 @@
     function submitWinToGoogleForms(email, prize) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe4ltNBs8mFxsHSB7H4x3TLG5dM38WP6NiVKkd59RLsR069UQ/formResponse";
       const data = new FormData();
-      data.append("entry.1687471187", email); // Email field
-      data.append("entry.1436690805", prize); // Prize field
+      data.append("entry.335702969", email); // Updated Email field
+      data.append("entry.856035639", prize); // Updated Prize field
 
       fetch(formUrl, {
         method: "POST",
         mode: "no-cors",
-        body: data
+       body: data
       });
     }
 
