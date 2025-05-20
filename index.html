@@ -195,8 +195,15 @@
     // --- TEST MODE 開關 ---
     const TEST_MODE = true; // 測試時設為 true，上線請改為 false
 
-    // ====== 配置你要跳轉的網址 ======
-    const EVENT_PAGE_URL = "https://youreventpage.com"; // "立即使用" 按鈕跳轉網址
+    // === 各獎項對應網址 ===
+    const PRIZE_LINKS = {
+      '🎯 三星 VIP 資格': 'https://vip.example.com',
+      '🎯 三鑽超值禮包': 'https://diamond.example.com',
+      '🎯 LOGO 獨家週邊': 'https://logo.example.com',
+      '⭐ 兩星獎勵 50 元折扣': 'https://star2.example.com',
+      '💎 兩鑽折扣券': 'https://diamond2.example.com',
+      '🅰️ 兩 LOGO 限定貼圖': 'https://logo2.example.com'
+    };
 
     // --- 配置 ---
     const symbols = ['star', 'diamond', 'logo'];
@@ -273,8 +280,11 @@
     }
 
     // --- 中獎提示彈窗 ---
+    let currentPrizeUrl = '';
     function showWinModal(prize) {
       document.getElementById('winPrizeText').innerText = `恭喜中獎，您的獎品是：${prize}`;
+      // 根據獎品設定網址
+      currentPrizeUrl = PRIZE_LINKS[prize] || "https://default.example.com";
       document.getElementById('winModal').style.display = 'flex';
     }
     function hideWinModal() {
@@ -291,7 +301,7 @@
       fetch(formUrl, {
         method: "POST",
         mode: "no-cors",
-       body: data
+        body: data
       });
     }
 
@@ -301,7 +311,8 @@
         hideWinModal(); // 只關閉彈窗
       };
       document.getElementById('winUseBtn').onclick = function() {
-        window.location.href = EVENT_PAGE_URL;
+        // 跳轉到對應的獎品連結
+        window.location.href = currentPrizeUrl;
       };
     });
 
