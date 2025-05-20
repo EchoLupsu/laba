@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>麻豆傳媒超級拉霸</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -76,12 +79,10 @@
       pointer-events: none;
       opacity: 0.5;
     }
-    /* Hide lever if locked */
     .lever.lever-locked .knob {
       pointer-events: none;
       opacity: 0.5;
     }
-    /* Win modal styling */
     #winModal {
       position: fixed;
       inset: 0;
@@ -123,10 +124,22 @@
       background: #29a19c;
       color: #fff;
     }
+    /* Logo at page bottom */
+    .footer-logo {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+    .footer-logo img {
+      max-width: 320px;
+      width: 80%;
+      height: auto;
+      display: block;
+    }
   </style>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>拉霸機 Demo</title>
 </head>
 <body>
   <h1>麻豆傳媒超級拉霸</h1>
@@ -173,12 +186,17 @@
     </div>
   </div>
 
+  <!-- Footer Logo -->
+  <div class="footer-logo">
+    <img src="https://github.com/EchoLupsu/laba/raw/main/icons/longlogo.png" alt="公司LOGO">
+  </div>
+
   <script>
     // --- TEST MODE 開關 ---
     const TEST_MODE = true; // 測試時設為 true，上線請改為 false
 
     // ====== 配置你要跳轉的網址 ======
-    const USE_NOW_URL = "http://google.com";  // "立即使用" 按鈕跳轉網址
+    const EVENT_PAGE_URL = "https://youreventpage.com"; // "立即使用" 按鈕跳轉網址
 
     // --- 配置 ---
     const symbols = ['star', 'diamond', 'logo'];
@@ -206,7 +224,6 @@
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
     function generateReels() {
-      // 產生每個輪子 20 格圖案
       return Array.from({ length: 3 }, () =>
         Array.from({ length: 20 }, () => getRandomSymbol())
       );
@@ -229,13 +246,11 @@
       return null;
     }
     function validateEmail(email) {
-      // 比較嚴格的簡單驗證
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
     }
-    //用來控制每日一次的，測試模式下 always return true
     function canSpin() {
       if (TEST_MODE) return true;
       const email = localStorage.getItem('slot_email');
@@ -246,11 +261,9 @@
       if (!TEST_MODE) {
         localStorage.setItem('slot_lastPlay', todayStr());
       }
-      // 測試模式下不紀錄日期
     }
     function lockLever(lock) {
       if (TEST_MODE) {
-        // 測試模式永遠解鎖拉桿
         document.getElementById('lever').classList.remove('lever-locked');
         return;
       }
@@ -268,13 +281,27 @@
       document.getElementById('winModal').style.display = 'none';
     }
 
+    // --- Google Forms Submission ---
+    function submitWinToGoogleForms(email, prize) {
+      const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe4ltNBs8mFxsHSB7H4x3TLG5dM38WP6NiVKkd59RLsR069UQ/formResponse";
+      const data = new FormData();
+      data.append("entry.1687471187", email); // Email field
+      data.append("entry.1436690805", prize); // Prize field
+
+      fetch(formUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: data
+      });
+    }
+
     // 綁定按鈕點擊事件
     window.addEventListener('DOMContentLoaded', function() {
       document.getElementById('winOkBtn').onclick = function() {
         hideWinModal(); // 只關閉彈窗
       };
       document.getElementById('winUseBtn').onclick = function() {
-        window.location.href = USE_NOW_URL;
+        window.location.href = EVENT_PAGE_URL;
       };
     });
 
@@ -308,11 +335,9 @@
       wrapper.style.transform = "translateY(0px)";
       wrapper.style.transition = "transform 1.5s cubic-bezier(0.45, 0, 0.55, 1)";
 
-      // 產生 20 格圖案
       reelSymbols.forEach(sym => {
         const div = document.createElement("div");
         div.className = "symbol";
-        // 若圖片不存在則 fallback emoji
         div.innerHTML =
           `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;" onerror="this.outerHTML='${symbolImgs[sym]}'">`;
         wrapper.appendChild(div);
@@ -320,7 +345,7 @@
 
       reel.innerHTML = "";
       reel.appendChild(wrapper);
-      // 使第18,19,20格落在可視區域
+
       const offset = (reelSymbols.length - 3) * 80;
 
       setTimeout(() => {
@@ -354,7 +379,6 @@
 
         // 產生轉輪
         const reels = generateReels();
-        // 動畫
         await Promise.all([
           spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
           spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
@@ -362,8 +386,7 @@
         ]);
         setTimeout(() => knob.classList.remove("pulled"), 400);
 
-        // 取動畫結束後可見 row, 即 reels[*][17], [18], [19] (最後三格)
-        // 顯示 18,19,20格給使用者，取中間值 [18] (index 17,18,19 zero-based)
+        // 顯示中間值 [18] (index 18 zero-based)
         const middleRow = [
           reels[0][18],
           reels[1][18],
@@ -378,10 +401,11 @@
           (prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～');
 
         if (prize) {
+          const email = localStorage.getItem('slot_email');
+          submitWinToGoogleForms(email, prize); // 傳送至 Google 表單
           showWinModal(prize);
         }
 
-        // 測試模式下不鎖定拉桿
         if (!TEST_MODE) lockLever(true);
         isSpinning = false;
       });
@@ -395,12 +419,5 @@
       }
     };
   </script>
-<div style="width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 40px; margin-bottom: 20px;">
-  <img
-    src="https://github.com/EchoLupsu/laba/raw/main/icons/longlogo.png"
-    alt="公司LOGO"
-    style="max-width: 320px; width: 80%; height: auto;"
-  />
-</div>
 </body>
 </html>
