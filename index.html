@@ -194,7 +194,7 @@
   <script>
     // --- TEST MODE 開關 ---
     const TEST_MODE = true; // 測試時設為 true，上線請改為 false
-  
+
     // === 各獎項對應網址 ===
     const PRIZE_LINKS = {
       '🎯 365天VIP會員+1000枚金幣': 'https://logo.example.com',
@@ -204,7 +204,7 @@
       '💎 7天VIP會員': 'https://diamond2.example.com',
       '⭐ 3天VIP會員': 'https://star2.example.com'
     };
-  
+
     // -- Prize pool and probabilities (percentages) --
     const PRIZE_POOL = [
       {
@@ -245,12 +245,18 @@
       },
       // The "other" case is handled below (9%)
     ];
-  
+
+    const symbolImgs = {
+      star: '⭐',
+      diamond: '💎',
+      logo: '🅰️'
+    };
+
     function getRandomSymbol() {
       const symbols = ['star', 'diamond', 'logo'];
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
-  
+
     // Main: Generate the reels (one row) according to the probability table
     function generateSpinResult() {
       // Build cumulative distribution for the prizes
@@ -259,10 +265,10 @@
         cumulative += p.probability;
         return { ...p, max: cumulative };
       });
-  
+
       // Generate a random number 0~100
       const rand = Math.random() * 100;
-  
+
       // Find which prize (if any) was hit
       let prizeInfo = null;
       for (const r of ranges) {
@@ -271,7 +277,7 @@
           break;
         }
       }
-  
+
       if (prizeInfo) {
         // If combo length 3, set all three the same
         if (prizeInfo.combo.length === 3) {
@@ -318,7 +324,7 @@
         prize: null
       };
     }
-  
+
     // Prize lookup function for showing the prize text
     function getPrizeText(row) {
       for (const p of PRIZE_POOL) {
@@ -335,7 +341,59 @@
       }
       return null;
     }
-  
+
+    // --- 活動公告彈窗關閉及下一步 ---
+    function confirmIntro() {
+      document.getElementById('introModal').style.display = 'none';
+      const email = localStorage.getItem('slot_email');
+      if (!email) {
+        document.getElementById('emailModal').style.display = 'flex';
+        lockLever(true);
+      } else {
+        document.getElementById('emailModal').style.display = 'none';
+        if (canSpin()) lockLever(false);
+        else lockLever(true);
+      }
+    }
+
+    // --- 信箱流程 ---
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    function saveEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      if (!validateEmail(email)) return alert('請輸入有效的信箱');
+      localStorage.setItem('slot_email', email);
+      document.getElementById('emailModal').style.display = 'none';
+      if (canSpin()) lockLever(false);
+      else lockLever(true);
+    }
+
+    // --- 當天是否能抽 ---
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+    function canSpin() {
+      if (TEST_MODE) return true;
+      const email = localStorage.getItem('slot_email');
+      const lastPlay = localStorage.getItem('slot_lastPlay');
+      return email && lastPlay !== todayStr();
+    }
+    function savePlayDate() {
+      if (!TEST_MODE) {
+        localStorage.setItem('slot_lastPlay', todayStr());
+      }
+    }
+    function lockLever(lock) {
+      if (TEST_MODE) {
+        document.getElementById('lever').classList.remove('lever-locked');
+        return;
+      }
+      const lever = document.getElementById('lever');
+      if (lock) lever.classList.add('lever-locked');
+      else lever.classList.remove('lever-locked');
+    }
+
     // --- 中獎提示彈窗 ---
     let currentPrizeUrl = '';
     function showWinModal(prize) {
@@ -349,21 +407,21 @@
     function hideWinModal() {
       document.getElementById('winModal').style.display = 'none';
     }
-  
+
     // --- Google Forms Submission ---
     function submitWinToGoogleForms(email, prize) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe4ltNBs8mFxsHSB7H4x3TLG5dM38WP6NiVKkd59RLsR069UQ/formResponse";
       const data = new FormData();
       data.append("entry.335702969", email);
       data.append("entry.856035639", prize || "未中獎");
-  
+
       fetch(formUrl, {
         method: "POST",
         mode: "no-cors",
         body: data
       });
     }
-  
+
     // 綁定按鈕點擊事件
     window.addEventListener('DOMContentLoaded', function() {
       document.getElementById('winOkBtn').onclick = function() {
@@ -375,7 +433,7 @@
         }
       };
     });
-  
+
     // --- 轉輪動畫 & 結果顯示 ---
     async function spinReelWithAnimation(reel, symbols, delay = 0) {
       const wrapper = document.createElement("div");
@@ -383,7 +441,7 @@
       wrapper.style.width = "100%";
       wrapper.style.transform = "translateY(0px)";
       wrapper.style.transition = "transform 1.5s cubic-bezier(0.45, 0, 0.55, 1)";
-  
+
       symbols.forEach(sym => {
         const div = document.createElement("div");
         div.className = "symbol";
@@ -391,27 +449,27 @@
           `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;" onerror="this.outerHTML='${symbolImgs[sym] || sym}'">`;
         wrapper.appendChild(div);
       });
-  
+
       reel.innerHTML = "";
       reel.appendChild(wrapper);
-  
+
       const offset = (symbols.length - 3) * 80;
-  
+
       setTimeout(() => {
         wrapper.style.transform = `translateY(-${offset}px)`;
       }, delay);
-  
+
       return new Promise(resolve => setTimeout(resolve, delay + 1600));
     }
-  
+
     // --- 初始與拉桿事件 ---
     window.onload = () => {
       document.getElementById('introModal').style.display = 'flex';
       lockLever(true);
-  
+
       const knob = document.getElementById("knob");
       let isSpinning = false;
-  
+
       knob.addEventListener("click", async () => {
         if (isSpinning) return;
         if (!canSpin()) {
@@ -425,7 +483,7 @@
         isSpinning = true;
         lockLever(true);
         knob.classList.add("pulled");
-  
+
         // 產生結果
         const spinResult = generateSpinResult();
         // 動畫假裝有 20 格，最後一格是結果
@@ -440,26 +498,26 @@
           spinReelWithAnimation(document.getElementById("reel3"), reelsData[2], 600)
         ]);
         setTimeout(() => knob.classList.remove("pulled"), 400);
-  
+
         // 顯示結果
         const row = spinResult.row;
         const prize = spinResult.prize;
         savePlayDate();
-  
+
         document.getElementById('resultLog').innerText =
           '本次結果：' + row.map(sym => symbolImgs[sym] || sym).join(' - ') + '\n' +
           (prize
             ? '🎉 中獎！獎品：' + prize
             : '😭 很可惜，沒有中獎～請再接再厲！');
-  
+
         const email = localStorage.getItem('slot_email');
         submitWinToGoogleForms(email, prize);
         showWinModal(prize);
-  
+
         if (!TEST_MODE) lockLever(true);
         isSpinning = false;
       });
-  
+
       // 首頁自動彈窗 & 槓桿狀態
       if (localStorage.getItem('slot_email')) {
         if (canSpin()) lockLever(false);
