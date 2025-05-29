@@ -355,6 +355,9 @@
         else lockLever(true);
       }
     }
+    // 在 confirmIntro() 定義下方加上這行：
+    window.confirmIntro = confirmIntro;
+
 
     // --- 信箱流程 ---
     function validateEmail(email) {
