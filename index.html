@@ -194,186 +194,224 @@
   <script>
     // --- TEST MODE 開關 ---
     const TEST_MODE = true; // 測試時設為 true，上線請改為 false
-
+  
     // === 各獎項對應網址 ===
     const PRIZE_LINKS = {
-      '🎯 三星 VIP 資格': 'https://vip.example.com',
-      '🎯 三鑽超值禮包': 'https://diamond.example.com',
-      '🎯 LOGO 獨家週邊': 'https://logo.example.com',
-      '⭐ 兩星獎勵 50 元折扣': 'https://star2.example.com',
-      '💎 兩鑽折扣券': 'https://diamond2.example.com',
-      '🅰️ 兩 LOGO 限定貼圖': 'https://logo2.example.com'
+      '🎯 365天VIP會員+1000枚金幣': 'https://logo.example.com',
+      '🎯 60天VIP會員': 'https://diamond.example.com',
+      '🎯 30天VIP會員': 'https://star.example.com',
+      '🅰️ 30天VIP會員+500枚金幣': 'https://logo2.example.com',
+      '💎 7天VIP會員': 'https://diamond2.example.com',
+      '⭐ 3天VIP會員': 'https://star2.example.com'
     };
-
-    // --- 配置 ---
-    const symbols = ['star', 'diamond', 'logo'];
-    const symbolImgs = {
-      star: '⭐',
-      diamond: '💎',
-      logo: '🅰️'
-    };
-
-    const prizeConfig = {
-      match3: {
-        star: { prize: '🎯 三星 VIP 資格', weight: 100 },
-        diamond: { prize: '🎯 三鑽超值禮包', weight: 100 },
-        logo: { prize: '🎯 LOGO 獨家週邊', weight: 100 }
+  
+    // -- Prize pool and probabilities (percentages) --
+    const PRIZE_POOL = [
+      {
+        combo: ['logo', 'logo', 'logo'],
+        prize: '🎯 365天VIP會員+1000枚金幣',
+        probability: 1,     // 1%
+        maxWinners: 1       // 1 person
       },
-      match2: {
-        star: { prize: '⭐ 兩星獎勵 50 元折扣', weight: 100 },
-        diamond: { prize: '💎 兩鑽折扣券', weight: 100 },
-        logo: { prize: '🅰️ 兩 LOGO 限定貼圖', weight: 100 }
-      }
-    };
-
-    // --- 公用函式 ---
+      {
+        combo: ['diamond', 'diamond', 'diamond'],
+        prize: '🎯 60天VIP會員',
+        probability: 5,     // 5%
+        maxWinners: 3
+      },
+      {
+        combo: ['star', 'star', 'star'],
+        prize: '🎯 30天VIP會員',
+        probability: 10,    // 10%
+        maxWinners: 5
+      },
+      {
+        combo: ['logo', 'logo'],
+        prize: '🅰️ 30天VIP會員+500枚金幣',
+        probability: 15,    // 15%
+        maxWinners: 10
+      },
+      {
+        combo: ['diamond', 'diamond'],
+        prize: '💎 7天VIP會員',
+        probability: 20,    // 20%
+        maxWinners: 30
+      },
+      {
+        combo: ['star', 'star'],
+        prize: '⭐ 3天VIP會員',
+        probability: 40,    // 40%
+        maxWinners: 100
+      },
+      // The "other" case is handled below (9%)
+    ];
+  
     function getRandomSymbol() {
+      const symbols = ['star', 'diamond', 'logo'];
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
-    function generateReels() {
-      return Array.from({ length: 3 }, () =>
-        Array.from({ length: 20 }, () => getRandomSymbol())
-      );
-    }
-    function checkPrize(row) {
-      const counts = row.reduce((acc, sym) => {
-        acc[sym] = (acc[sym] || 0) + 1;
-        return acc;
-      }, {});
-      for (let sym in counts) {
-        if (counts[sym] === 3 && prizeConfig.match3[sym]) {
-          if (Math.random() * 100 < prizeConfig.match3[sym].weight)
-            return prizeConfig.match3[sym].prize;
+  
+    // Main: Generate the reels (one row) according to the probability table
+    function generateSpinResult() {
+      // Build cumulative distribution for the prizes
+      let cumulative = 0;
+      const ranges = PRIZE_POOL.map(p => {
+        cumulative += p.probability;
+        return { ...p, max: cumulative };
+      });
+  
+      // Generate a random number 0~100
+      const rand = Math.random() * 100;
+  
+      // Find which prize (if any) was hit
+      let prizeInfo = null;
+      for (const r of ranges) {
+        if (rand < r.max) {
+          prizeInfo = r;
+          break;
         }
-        if (counts[sym] === 2 && prizeConfig.match2[sym]) {
-          if (Math.random() * 100 < prizeConfig.match2[sym].weight)
-            return prizeConfig.match2[sym].prize;
+      }
+  
+      if (prizeInfo) {
+        // If combo length 3, set all three the same
+        if (prizeInfo.combo.length === 3) {
+          return {
+            row: [prizeInfo.combo[0], prizeInfo.combo[1], prizeInfo.combo[2]],
+            prize: prizeInfo.prize
+          };
+        }
+        // If combo length 2, randomly assign the matching pair
+        if (prizeInfo.combo.length === 2) {
+          const symbols = ['star', 'diamond', 'logo'];
+          const [two, ] = prizeInfo.combo;
+          let row = [two, two, null];
+          // Place the different symbol at a random position
+          let diffSymbol;
+          do {
+            diffSymbol = getRandomSymbol();
+          } while (diffSymbol === two);
+          const diffPos = Math.floor(Math.random() * 3);
+          row[diffPos] = diffSymbol;
+          return {
+            row: row,
+            prize: prizeInfo.prize
+          };
+        }
+      }
+      // No prize: random, ensure it's not a winning combo
+      let row;
+      do {
+        row = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+        // Ensure not matching any winning combo
+      } while (
+        PRIZE_POOL.some(p =>
+          (p.combo.length === 3 && row[0] === row[1] && row[1] === row[2] && row[0] === p.combo[0]) ||
+          (p.combo.length === 2 && (
+            (row[0] === row[1] && row[0] === p.combo[0] && row[2] !== p.combo[0]) ||
+            (row[1] === row[2] && row[1] === p.combo[0] && row[0] !== p.combo[0]) ||
+            (row[0] === row[2] && row[0] === p.combo[0] && row[1] !== p.combo[0])
+          ))
+        )
+      );
+      return {
+        row: row,
+        prize: null
+      };
+    }
+  
+    // Prize lookup function for showing the prize text
+    function getPrizeText(row) {
+      for (const p of PRIZE_POOL) {
+        if (
+          (p.combo.length === 3 && row[0] === row[1] && row[1] === row[2] && row[0] === p.combo[0]) ||
+          (p.combo.length === 2 && (
+            (row[0] === row[1] && row[0] === p.combo[0] && row[2] !== p.combo[0]) ||
+            (row[1] === row[2] && row[1] === p.combo[0] && row[0] !== p.combo[0]) ||
+            (row[0] === row[2] && row[0] === p.combo[0] && row[1] !== p.combo[0])
+          ))
+        ) {
+          return p.prize;
         }
       }
       return null;
     }
-    function validateEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-    function todayStr() {
-      return new Date().toISOString().slice(0, 10);
-    }
-    function canSpin() {
-      if (TEST_MODE) return true;
-      const email = localStorage.getItem('slot_email');
-      const lastPlay = localStorage.getItem('slot_lastPlay');
-      return email && lastPlay !== todayStr();
-    }
-    function savePlayDate() {
-      if (!TEST_MODE) {
-        localStorage.setItem('slot_lastPlay', todayStr());
-      }
-    }
-    function lockLever(lock) {
-      if (TEST_MODE) {
-        document.getElementById('lever').classList.remove('lever-locked');
-        return;
-      }
-      const lever = document.getElementById('lever');
-      if (lock) lever.classList.add('lever-locked');
-      else lever.classList.remove('lever-locked');
-    }
-
+  
     // --- 中獎提示彈窗 ---
     let currentPrizeUrl = '';
     function showWinModal(prize) {
-      document.getElementById('winPrizeText').innerText = `恭喜中獎，您的獎品是：${prize}`;
+      document.getElementById('winPrizeText').innerText =
+        prize ? `恭喜中獎，您的獎品是：${prize}` : '很可惜，沒有中獎～請再接再厲！';
       // 根據獎品設定網址
-      currentPrizeUrl = PRIZE_LINKS[prize] || "https://default.example.com";
+      currentPrizeUrl = prize ? (PRIZE_LINKS[prize] || "https://default.example.com") : "#";
+      document.getElementById('winUseBtn').style.display = prize ? '' : 'none';
       document.getElementById('winModal').style.display = 'flex';
     }
     function hideWinModal() {
       document.getElementById('winModal').style.display = 'none';
     }
-
+  
     // --- Google Forms Submission ---
     function submitWinToGoogleForms(email, prize) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe4ltNBs8mFxsHSB7H4x3TLG5dM38WP6NiVKkd59RLsR069UQ/formResponse";
       const data = new FormData();
-      data.append("entry.335702969", email); // Updated Email field
-      data.append("entry.856035639", prize); // Updated Prize field
-
+      data.append("entry.335702969", email);
+      data.append("entry.856035639", prize || "未中獎");
+  
       fetch(formUrl, {
         method: "POST",
         mode: "no-cors",
         body: data
       });
     }
-
+  
     // 綁定按鈕點擊事件
     window.addEventListener('DOMContentLoaded', function() {
       document.getElementById('winOkBtn').onclick = function() {
-        hideWinModal(); // 只關閉彈窗
+        hideWinModal();
       };
       document.getElementById('winUseBtn').onclick = function() {
-        // 跳轉到對應的獎品連結
-        window.location.href = currentPrizeUrl;
+        if (currentPrizeUrl && currentPrizeUrl !== "#") {
+          window.location.href = currentPrizeUrl;
+        }
       };
     });
-
-    // --- Modal 流程 ---
-    function confirmIntro() {
-      document.getElementById('introModal').style.display = 'none';
-      const email = localStorage.getItem('slot_email');
-      if (!email) {
-        document.getElementById('emailModal').style.display = 'flex';
-        lockLever(true);
-      } else {
-        document.getElementById('emailModal').style.display = 'none';
-        if (canSpin()) lockLever(false);
-        else lockLever(true);
-      }
-    }
-    function saveEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      if (!validateEmail(email)) return alert('請輸入有效的信箱');
-      localStorage.setItem('slot_email', email);
-      document.getElementById('emailModal').style.display = 'none';
-      if (canSpin()) lockLever(false);
-      else lockLever(true);
-    }
-
-    // --- 轉輪動畫 ---
-    async function spinReelWithAnimation(reel, reelSymbols, delay = 0) {
+  
+    // --- 轉輪動畫 & 結果顯示 ---
+    async function spinReelWithAnimation(reel, symbols, delay = 0) {
       const wrapper = document.createElement("div");
       wrapper.style.position = "absolute";
       wrapper.style.width = "100%";
       wrapper.style.transform = "translateY(0px)";
       wrapper.style.transition = "transform 1.5s cubic-bezier(0.45, 0, 0.55, 1)";
-
-      reelSymbols.forEach(sym => {
+  
+      symbols.forEach(sym => {
         const div = document.createElement("div");
         div.className = "symbol";
         div.innerHTML =
-          `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;" onerror="this.outerHTML='${symbolImgs[sym]}'">`;
+          `<img src="/icons/${sym}.png" alt="${sym}" style="height:60px;" onerror="this.outerHTML='${symbolImgs[sym] || sym}'">`;
         wrapper.appendChild(div);
       });
-
+  
       reel.innerHTML = "";
       reel.appendChild(wrapper);
-
-      const offset = (reelSymbols.length - 3) * 80;
-
+  
+      const offset = (symbols.length - 3) * 80;
+  
       setTimeout(() => {
         wrapper.style.transform = `translateY(-${offset}px)`;
       }, delay);
-
+  
       return new Promise(resolve => setTimeout(resolve, delay + 1600));
     }
-
+  
     // --- 初始與拉桿事件 ---
     window.onload = () => {
       document.getElementById('introModal').style.display = 'flex';
       lockLever(true);
-
+  
       const knob = document.getElementById("knob");
       let isSpinning = false;
-
+  
       knob.addEventListener("click", async () => {
         if (isSpinning) return;
         if (!canSpin()) {
@@ -387,40 +425,41 @@
         isSpinning = true;
         lockLever(true);
         knob.classList.add("pulled");
-
-        // 產生轉輪
-        const reels = generateReels();
+  
+        // 產生結果
+        const spinResult = generateSpinResult();
+        // 動畫假裝有 20 格，最後一格是結果
+        const reelsData = [
+          Array(19).fill(null).map(getRandomSymbol).concat([spinResult.row[0]]),
+          Array(19).fill(null).map(getRandomSymbol).concat([spinResult.row[1]]),
+          Array(19).fill(null).map(getRandomSymbol).concat([spinResult.row[2]])
+        ];
         await Promise.all([
-          spinReelWithAnimation(document.getElementById("reel1"), reels[0], 0),
-          spinReelWithAnimation(document.getElementById("reel2"), reels[1], 300),
-          spinReelWithAnimation(document.getElementById("reel3"), reels[2], 600)
+          spinReelWithAnimation(document.getElementById("reel1"), reelsData[0], 0),
+          spinReelWithAnimation(document.getElementById("reel2"), reelsData[1], 300),
+          spinReelWithAnimation(document.getElementById("reel3"), reelsData[2], 600)
         ]);
         setTimeout(() => knob.classList.remove("pulled"), 400);
-
-        // 顯示中間值 [18] (index 18 zero-based)
-        const middleRow = [
-          reels[0][18],
-          reels[1][18],
-          reels[2][18]
-        ];
-        const prize = checkPrize(middleRow);
-
+  
+        // 顯示結果
+        const row = spinResult.row;
+        const prize = spinResult.prize;
         savePlayDate();
-
+  
         document.getElementById('resultLog').innerText =
-          '本次結果：' + middleRow.map(sym => symbolImgs[sym]).join(' - ') + '\n' +
-          (prize ? '🎉 中獎！獎品：' + prize : '😭 很可惜，沒有中獎～');
-
-        if (prize) {
-          const email = localStorage.getItem('slot_email');
-          submitWinToGoogleForms(email, prize); // 傳送至 Google 表單
-          showWinModal(prize);
-        }
-
+          '本次結果：' + row.map(sym => symbolImgs[sym] || sym).join(' - ') + '\n' +
+          (prize
+            ? '🎉 中獎！獎品：' + prize
+            : '😭 很可惜，沒有中獎～請再接再厲！');
+  
+        const email = localStorage.getItem('slot_email');
+        submitWinToGoogleForms(email, prize);
+        showWinModal(prize);
+  
         if (!TEST_MODE) lockLever(true);
         isSpinning = false;
       });
-
+  
       // 首頁自動彈窗 & 槓桿狀態
       if (localStorage.getItem('slot_email')) {
         if (canSpin()) lockLever(false);
