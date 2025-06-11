@@ -401,7 +401,7 @@
     let currentPrizeUrl = '';
     function showWinModal(prize) {
       document.getElementById('winPrizeText').innerText =
-        prize ? `恭喜中獎，您的獎品是：麻豆國際版${prize}` : '很可惜，沒有中獎～';
+        prize ? `恭喜中獎，您的獎品是：<br>麻豆國際版${prize}</br>` : '很可惜，沒有中獎～';
       // 根據獎品設定網址
       currentPrizeUrl = prize ? (PRIZE_LINKS[prize] || "https://default.example.com") : "#";
       document.getElementById('winUseBtn').style.display = prize ? '' : 'none';
