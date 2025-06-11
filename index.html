@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>麻豆傳媒超級拉霸</title>
+  <title>麻豆傳媒超級拉霸機</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -177,11 +177,10 @@
   <!-- Winning Modal -->
   <div id="winModal">
     <div class="modal-content">
-      <h2>🎉 恭喜中獎</h2>
+      <h2>抽獎結果</h2>
       <p id="winPrizeText" style="font-size: 20px; margin: 20px 0;"></p>
       <div class="buttons">
         <button id="winOkBtn">確定</button>
-        <button id="winUseBtn">立即使用</button>
       </div>
     </div>
   </div>
@@ -197,49 +196,49 @@
 
     // === 各獎項對應網址 ===
     const PRIZE_LINKS = {
-      '🎯 365天VIP會員+1000枚金幣': 'https://logo.example.com',
-      '🎯 60天VIP會員': 'https://diamond.example.com',
-      '🎯 30天VIP會員': 'https://star.example.com',
-      '🅰️ 30天VIP會員+500枚金幣': 'https://logo2.example.com',
-      '💎 7天VIP會員': 'https://diamond2.example.com',
-      '⭐ 3天VIP會員': 'https://star2.example.com'
+      '365天VIP會員+1000枚金幣': 'https://logo.example.com',
+      '60天VIP會員': 'https://diamond.example.com',
+      '30天VIP會員': 'https://star.example.com',
+      '30天VIP會員+500枚金幣': 'https://logo2.example.com',
+      '7天VIP會員': 'https://diamond2.example.com',
+      '3天VIP會員': 'https://star2.example.com'
     };
 
     // -- Prize pool and probabilities (percentages) --
     const PRIZE_POOL = [
       {
         combo: ['logo', 'logo', 'logo'],
-        prize: '🎯 365天VIP會員+1000枚金幣🎯🎯',
+        prize: '免費365天VIP會員，額外加贈1000枚金幣',
         probability: 1,     // 1%
         maxWinners: 1       // 1 person
       },
       {
         combo: ['diamond', 'diamond', 'diamond'],
-        prize: '🎯 60天VIP會員',
+        prize: '免費60天VIP會員',
         probability: 5,     // 5%
         maxWinners: 3
       },
       {
         combo: ['star', 'star', 'star'],
-        prize: '🎯 30天VIP會員🎯',
+        prize: '免費30天VIP會員',
         probability: 10,    // 10%
         maxWinners: 5
       },
       {
         combo: ['logo', 'logo'],
-        prize: '🅰️ 30天VIP會員+500枚金幣🅰️',
+        prize: '免費30天VIP會員，額外加贈500枚金幣',
         probability: 15,    // 15%
         maxWinners: 10
       },
       {
         combo: ['diamond', 'diamond'],
-        prize: '💎 7天VIP會員 💎',
+        prize: '免費7天VIP會員',
         probability: 20,    // 20%
         maxWinners: 30
       },
       {
         combo: ['star', 'star'],
-        prize: '⭐ 3天VIP會員 ⭐',
+        prize: '免費3天VIP會員',
         probability: 40,    // 40%
         maxWinners: 100
       },
@@ -401,7 +400,7 @@
     let currentPrizeUrl = '';
     function showWinModal(prize) {
       document.getElementById('winPrizeText').innerText =
-        prize ? `恭喜中獎，您的獎品是：${prize}` : '很可惜，沒有中獎～請再接再厲！';
+        prize ? `恭喜中獎，您的獎品是：麻豆國際版${prize}` : '很可惜，沒有中獎～';
       // 根據獎品設定網址
       currentPrizeUrl = prize ? (PRIZE_LINKS[prize] || "https://default.example.com") : "#";
       document.getElementById('winUseBtn').style.display = prize ? '' : 'none';
