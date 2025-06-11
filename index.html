@@ -133,7 +133,6 @@
       background: #29a19c;
       color: #fff;
     }
-    /* Logo at page bottom */
     .footer-logo {
       width: 100%;
       display: flex;
@@ -203,23 +202,13 @@
   </div>
 
   <script>
-    // --- TEST MODE 開關 ---
-    const TEST_MODE = true; // 測試時設為 true，上線請改為 false
+    // TEST MODE 開關
+    const TEST_MODE = true; // 上線請改為 false
 
-    // === 各獎項對應網址 ===
-    // 請將此連結換成你的活動最新頁面
-    const EVENT_PAGE_URL = "https://your-latest-event-page.com";
-    const PRIZE_LINKS = {
-      '365天VIP會員+1000枚金幣': 'https://logo.example.com',
-      '60天VIP會員': 'https://diamond.example.com',
-      '30天VIP會員': 'https://star.example.com',
-      '30天VIP會員+500枚金幣': 'https://logo2.example.com',
-      '7天VIP會員': 'https://diamond2.example.com',
-      '3天VIP會員': 'https://star2.example.com'
-    };
+    // 活動頁面網址
+    const EVENT_PAGE_URL = "https://laba-539p-git-main-ake702623-gmailcoms-projects.vercel.app/";
 
-    // -- Prize pool and probabilities (percentages) --
-    // 根據你設定的中獎機率
+    // 獎池與機率 (百分比，合計100%)
     const PRIZE_POOL = [
       {
         combo: ['logo', 'logo', 'logo'],
@@ -265,7 +254,7 @@
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
 
-    // --- 活動公告彈窗關閉及下一步 ---
+    // 活動公告彈窗關閉及下一步
     function confirmIntro() {
       document.getElementById('introModal').style.display = 'none';
       const email = localStorage.getItem('slot_email');
@@ -316,7 +305,7 @@
       else lever.classList.remove('lever-locked');
     }
 
-    // --- Google Forms Submission ---
+    // 送 Google 表單記錄
     function submitWinToGoogleForms(email, prize) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSe4ltNBs8mFxsHSB7H4x3TLG5dM38WP6NiVKkd59RLsR069UQ/formResponse";
       const data = new FormData();
@@ -330,7 +319,7 @@
       });
     }
 
-    // --- 轉輪動畫 & 結果顯示 ---
+    // 轉輪動畫
     async function spinReelWithAnimation(reel, symbols, delay = 0) {
       const wrapper = document.createElement("div");
       wrapper.style.position = "absolute";
@@ -358,7 +347,7 @@
       return new Promise(resolve => setTimeout(resolve, delay + 1600));
     }
 
-    // --- spin logic: always put result in the middle row (index 18 for 0-based 20 symbols) ---
+    // 中獎機率邏輯
     function generateSpinResult() {
       let cumulative = 0;
       const ranges = PRIZE_POOL.map(p => {
@@ -375,20 +364,20 @@
         }
       }
 
-      // The result row (winning line) is always placed into the middle visible row (index 18)
       let resultRow, prize;
       if (prizeInfo) {
         if (prizeInfo.combo.length === 3) {
           resultRow = [prizeInfo.combo[0], prizeInfo.combo[1], prizeInfo.combo[2]];
           prize = prizeInfo.prize;
         } else if (prizeInfo.combo.length === 2) {
-          const [two, ] = prizeInfo.combo;
-          let row = [two, two, null];
+          const [two] = prizeInfo.combo;
+          // Start with all the same, then replace one position with a different symbol
+          let row = [two, two, two];
+          const diffPos = Math.floor(Math.random() * 3);
           let diffSymbol;
           do {
             diffSymbol = getRandomSymbol();
           } while (diffSymbol === two);
-          const diffPos = Math.floor(Math.random() * 3);
           row[diffPos] = diffSymbol;
           resultRow = row;
           prize = prizeInfo.prize;
@@ -412,7 +401,7 @@
       return { row: resultRow, prize };
     }
 
-    // --- Prize check for a visible row ---
+    // 判斷中獎
     function getPrizeText(row) {
       for (const p of PRIZE_POOL) {
         if (
@@ -429,7 +418,7 @@
       return null;
     }
 
-    // --- 中獎提示彈窗 ---
+    // 中獎提示彈窗
     let currentPrizeUrl = '';
     function showWinModal(prize) {
       document.getElementById('winPrizeText').innerText =
@@ -454,7 +443,7 @@
       };
     });
 
-    // --- 初始與拉桿事件 ---
+    // 初始與拉桿事件
     window.onload = () => {
       document.getElementById('introModal').style.display = 'flex';
       lockLever(true);
