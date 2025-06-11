@@ -7,7 +7,9 @@
   <style>
     * { box-sizing: border-box; }
     body {
-      background: #888;
+      /* Set the background image for the entire page */
+      background: url('https://github.com/EchoLupsu/laba/raw/main/icons/back.png') center center fixed no-repeat;
+      background-size: cover;
       color: #fff;
       font-family: 'Georgia', serif;
       font-weight: bold;
@@ -133,6 +135,19 @@
       background: #29a19c;
       color: #fff;
     }
+    .news-banner {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 28px 0 10px 0;
+    }
+    .news-banner img {
+      max-width: 420px;
+      width: 90%;
+      height: auto;
+      display: block;
+    }
     .footer-logo {
       width: 100%;
       display: flex;
@@ -159,6 +174,16 @@
     <div class="lever lever-locked" id="lever">
       <div class="knob" id="knob"></div>
     </div>
+  </div>
+
+  <!-- News image under slot machine, above logo -->
+  <div class="news-banner">
+    <img src="https://github.com/EchoLupsu/laba/raw/main/icons/news.png" alt="最新消息" />
+  </div>
+
+  <!-- Footer Logo -->
+  <div class="footer-logo">
+    <img src="https://github.com/EchoLupsu/laba/raw/main/icons/longlogo.png" alt="公司LOGO">
   </div>
 
   <!-- 活動公告彈窗 -->
@@ -194,11 +219,6 @@
         <button id="winOkBtn">確定</button>
       </div>
     </div>
-  </div>
-
-  <!-- Footer Logo -->
-  <div class="footer-logo">
-    <img src="https://github.com/EchoLupsu/laba/raw/main/icons/longlogo.png" alt="公司LOGO">
   </div>
 
   <script>
@@ -281,18 +301,18 @@
       else lockLever(true);
     }
 
-    function todayStr() {
-      return new Date().toISOString().slice(0, 10);
-    }
     function canSpin() {
       if (TEST_MODE) return true;
       const email = localStorage.getItem('slot_email');
-      const lastPlay = localStorage.getItem('slot_lastPlay');
-      return email && lastPlay !== todayStr();
+      if (!email) return false;
+      return !localStorage.getItem('slot_played_' + email);
     }
-    function savePlayDate() {
+    function savePlayRecord() {
       if (!TEST_MODE) {
-        localStorage.setItem('slot_lastPlay', todayStr());
+        const email = localStorage.getItem('slot_email');
+        if (email) {
+          localStorage.setItem('slot_played_' + email, "yes");
+        }
       }
     }
     function lockLever(lock) {
@@ -457,7 +477,7 @@
           if (!localStorage.getItem('slot_email')) {
             document.getElementById('emailModal').style.display = 'flex';
           } else {
-            alert('今天已抽過囉！明天再來試手氣吧！');
+            alert('您已參加過活動，每個信箱僅限參加一次！');
           }
           return;
         }
@@ -493,7 +513,7 @@
           reelsData[2][animationLength - 2]
         ];
         const prize = getPrizeText(visibleMiddleRow);
-        savePlayDate();
+        savePlayRecord();
 
         document.getElementById('resultLog').innerText =
           '本次結果：' + visibleMiddleRow.map(sym => symbolImgs[sym] || sym).join(' - ') + '\n' +
